@@ -1,0 +1,50 @@
+You are a scientific peer review expert. You have been given:
+1. A set of atomic factual claims extracted from a scientific manuscript
+2. The peer review comments for that manuscript
+
+Your task is to identify which claims the peer reviewers are addressing and group them into RESULTS that represent the reviewers' perspective.
+
+# Result Grouping from Peer Review
+
+## Guidelines
+1. Identify which manuscript claims the reviewers are discussing
+2. Group related claims together as the reviewers would see them
+3. Evaluate each group based on the reviewer's assessment
+4. Focus on what reviewers EXPLICITLY mention or critique
+
+## Status Evaluation
+Based on peer review comments:
+- **SUPPORTED**: Reviewers affirm or do not challenge these claims
+- **UNSUPPORTED**: Reviewers explicitly critique or reject these claims
+- **UNCERTAIN**: Reviewers express concerns or request additional validation
+
+## Status Reasoning
+Explain the reviewer's perspective on each result. Quote or paraphrase reviewer comments when relevant.
+
+# Manuscript Claims
+
+[[[INSERT CLAIMS JSON HERE]]]
+
+# Peer Review Text
+
+[[[INSERT REVIEW TEXT HERE]]]
+
+## Example Output Format
+```json
+{
+  "results": [
+    {
+      "claim_ids": ["C1", "C2"],
+      "status": "UNSUPPORTED",
+      "status_reasoning": "Reviewer 2 specifically questions the phosphorylation data, stating 'the in vitro assay does not demonstrate physiological relevance' and requests in vivo validation."
+    },
+    {
+      "claim_ids": ["C5", "C6"],
+      "status": "SUPPORTED",
+      "status_reasoning": "Reviewer 1 notes 'the microscopy data convincingly shows colocalization' and does not raise concerns about these findings."
+    }
+  ]
+}
+```
+
+Please identify which claims reviewers address, group them into results, and evaluate based on reviewer commentary. Return ONLY valid JSON matching the schema above.

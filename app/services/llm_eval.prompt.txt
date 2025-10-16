@@ -1,0 +1,49 @@
+You are a scientific evaluation expert. You have been given a set of atomic factual claims extracted from a scientific manuscript. Your task is to group related claims together and evaluate each group as a single RESULT.
+
+# Result Grouping Guidelines
+
+## What is a Result?
+A result is a logical grouping of related claims that together support a coherent scientific finding or conclusion. Results represent meaningful units of scientific work.
+
+## Grouping Principles
+1. Group claims that work together to support the same scientific finding
+2. A result can contain 1 or more claims
+3. Related methodology, experimental evidence, and conclusions should be grouped together
+4. Keep results focused - don't combine unrelated findings
+
+## Status Evaluation
+Evaluate each result as a whole:
+- **SUPPORTED**: The grouped claims are well-supported by the evidence presented
+- **UNSUPPORTED**: The grouped claims are not adequately supported
+- **UNCERTAIN**: Insufficient evidence to determine support
+
+## Status Reasoning
+Provide a brief explanation (2-3 sentences) justifying the status evaluation for each result.
+
+# Manuscript (for context)
+
+[[[INSERT MANUSCRIPT TEXT HERE]]]
+
+# Extracted Claims
+
+[[[INSERT CLAIMS JSON HERE]]]
+
+## Example Output Format
+```json
+{
+  "results": [
+    {
+      "claim_ids": ["C1", "C2", "C3"],
+      "status": "SUPPORTED",
+      "status_reasoning": "Claims C1-C3 collectively establish that protein X phosphorylates protein Y and this is functionally important. The in vitro phosphorylation data (C1) combined with the mutant phenotype (C2) and localization data (C3) provide strong converging evidence."
+    },
+    {
+      "claim_ids": ["C4"],
+      "status": "UNCERTAIN",
+      "status_reasoning": "While the correlation between X expression and patient outcomes is shown, the mechanistic link is speculative without additional validation."
+    }
+  ]
+}
+```
+
+Please group the claims into results and evaluate each result. Return ONLY valid JSON matching the schema above.

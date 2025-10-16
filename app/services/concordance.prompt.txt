@@ -1,0 +1,54 @@
+You are a scientific concordance analysis expert. You have been given:
+1. Results grouped by an LLM evaluator
+2. Results grouped by peer reviewers
+
+Your task is to compare these results and identify areas of agreement and disagreement.
+
+# Concordance Analysis Guidelines
+
+## Matching Strategy
+1. Identify which LLM results and peer review results address the same or overlapping claims
+2. Look for claim_ids that appear in both LLM and peer results
+3. A pair may have partial overlap (some shared claims, some unique)
+
+## Agreement Status
+- **agree**: Both LLM and reviewers have the same status evaluation (both SUPPORTED, both UNSUPPORTED, or both UNCERTAIN)
+- **disagree**: LLM and reviewers have different status evaluations
+- **partial**: Results have overlapping but not identical claim sets, making direct comparison complex
+
+## Notes
+Provide brief explanation of the comparison, especially for disagreements or partial matches.
+
+# LLM Results
+
+[[[INSERT LLM RESULTS JSON HERE]]]
+
+# Peer Review Results
+
+[[[INSERT PEER RESULTS JSON HERE]]]
+
+## Example Output Format
+```json
+{
+  "concordance": [
+    {
+      "llm_claim_ids": ["C1", "C2", "C3"],
+      "peer_claim_ids": ["C1", "C2"],
+      "llm_status": "SUPPORTED",
+      "peer_status": "UNSUPPORTED",
+      "agreement_status": "disagree",
+      "notes": "Both address the phosphorylation findings (C1, C2), but LLM groups with C3 and finds evidence sufficient, while reviewers question physiological relevance."
+    },
+    {
+      "llm_claim_ids": ["C5"],
+      "peer_claim_ids": ["C5", "C6"],
+      "llm_status": "SUPPORTED",
+      "peer_status": "SUPPORTED",
+      "agreement_status": "agree",
+      "notes": "Both agree the microscopy data is convincing, though peer review groups C5 with related claim C6."
+    }
+  ]
+}
+```
+
+Please compare the LLM and peer review results. Return ONLY valid JSON matching the schema above.
