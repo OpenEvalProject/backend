@@ -16,8 +16,4 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "boto3>=1.35.0",
     "lxml>=5.0.0",
-    "jxp",
 ]
-
-[tool.uv.sources]
-jxp = { path = "../jxp", editable = true }
