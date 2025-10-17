@@ -6,10 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import init_db
+from app.db_init import init_database
 from app.models import HealthResponse
-from app.routers import api, auth, submissions
-from app.migrations import migrate_to_new_schema
+from app.routers import auth, manuscripts
 
 # Configure logging
 logging.basicConfig(
@@ -23,9 +22,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Initialize database on startup"""
     logger.info("Initializing database...")
-    init_db()  # Create users and sessions tables
-    logger.info("Running database migration...")
-    migrate_to_new_schema()  # Migrate to new schema
+    init_database()  # Create new schema tables
     logger.info("Database initialized")
     yield
     logger.info("Shutting down...")
@@ -50,8 +47,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
-app.include_router(api.router)
-app.include_router(submissions.router)
+app.include_router(manuscripts.router)
 
 
 @app.get("/health", response_model=HealthResponse)
