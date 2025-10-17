@@ -14,27 +14,27 @@ def generate_state() -> str:
     return secrets.token_urlsafe(32)
 
 
-def get_orcid_auth_url(state: str) -> str:
-    """Get ORCID authorization URL"""
+def get_orcid_auth_url(state: str, redirect_uri: str) -> str:
+    """Get ORCID authorization URL with dynamic redirect URI"""
     params = {
         "client_id": settings.orcid_client_id,
         "response_type": "code",
         "scope": "/authenticate",
-        "redirect_uri": settings.orcid_redirect_uri,
+        "redirect_uri": redirect_uri,
         "state": state,
     }
     query = "&".join(f"{k}={v}" for k, v in params.items())
     return f"{settings.orcid_auth_url}?{query}"
 
 
-def exchange_code_for_token(code: str) -> dict:
-    """Exchange authorization code for access token"""
+def exchange_code_for_token(code: str, redirect_uri: str) -> dict:
+    """Exchange authorization code for access token with dynamic redirect URI"""
     data = {
         "client_id": settings.orcid_client_id,
         "client_secret": settings.orcid_client_secret,
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": settings.orcid_redirect_uri,
+        "redirect_uri": redirect_uri,
     }
     headers = {"Accept": "application/json"}
 

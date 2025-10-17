@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     # ORCID OAuth settings
     orcid_client_id: str = ""
     orcid_client_secret: str = ""
-    orcid_redirect_uri: str = "http://localhost:3000/auth/callback"
+    # Note: redirect_uri is now dynamically generated from request.url_for()
+    # No need to configure it manually
     orcid_environment: str = "production"  # or 'sandbox'
 
     # LLM API settings

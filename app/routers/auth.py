@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 
 from app.auth import (
@@ -22,18 +22,20 @@ _oauth_states = {}
 
 
 @router.get("/login")
-async def login():
-    """Redirect to ORCID OAuth authorization page"""
+async def login(request: Request):
+    """Redirect to ORCID OAuth authorization page with dynamic redirect URI"""
     state = generate_state()
     _oauth_states[state] = True  # Mark state as valid
 
-    auth_url = get_orcid_auth_url(state)
+    # Generate callback URL dynamically from request
+    redirect_uri = str(request.url_for("callback"))
+    auth_url = get_orcid_auth_url(state, redirect_uri)
     return RedirectResponse(url=auth_url)
 
 
 @router.get("/callback")
-async def callback(code: str, state: str, response: Response):
-    """Handle ORCID OAuth callback"""
+async def callback(request: Request, code: str, state: str, response: Response):
+    """Handle ORCID OAuth callback with dynamic redirect URI"""
     # Verify state parameter (CSRF protection)
     if state not in _oauth_states:
         raise HTTPException(
@@ -45,8 +47,11 @@ async def callback(code: str, state: str, response: Response):
     del _oauth_states[state]
 
     try:
+        # Generate the same redirect URI used in login
+        redirect_uri = str(request.url_for("callback"))
+
         # Exchange code for token
-        token_data = exchange_code_for_token(code)
+        token_data = exchange_code_for_token(code, redirect_uri)
         orcid_id = token_data.get("orcid")
         access_token = token_data.get("access_token")
 
