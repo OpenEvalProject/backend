@@ -379,9 +379,7 @@ def main():
         return 1
 
     # Initialize database (create tables if they don't exist)
-    logger.info(f"Initializing database at: {settings.database_path}")
-    init_database(settings.database_path)
-    logger.info("Database initialized")
+    init_database()
 
     # Initialize ingester
     ingester = ManuscriptIngester(settings.database_path)
