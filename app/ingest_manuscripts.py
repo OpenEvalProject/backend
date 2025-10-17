@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from app.config import settings
+from app.db_init import init_database
 
 logger = logging.getLogger(__name__)
 
@@ -347,7 +348,7 @@ def main():
     parser.add_argument(
         "--manuscripts-dir",
         type=Path,
-        default=Path("/Users/sinabooeshaghi/projects/claim-validation/evals/manuscripts"),
+        required=True,
         help="Path to manuscripts directory"
     )
 
@@ -376,6 +377,11 @@ def main():
     if not args.manuscripts_dir.exists():
         logger.error(f"Manuscripts directory not found: {args.manuscripts_dir}")
         return 1
+
+    # Initialize database (create tables if they don't exist)
+    logger.info(f"Initializing database at: {settings.database_path}")
+    init_database(settings.database_path)
+    logger.info("Database initialized")
 
     # Initialize ingester
     ingester = ManuscriptIngester(settings.database_path)
