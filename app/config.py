@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     orcid_client_id: str = ""
     orcid_client_secret: str = ""
     orcid_redirect_uri: str = "http://localhost:3000/auth/callback"
-    orcid_environment: str = "sandbox"  # or 'production'
+    orcid_environment: str = "production"  # or 'sandbox'
 
     # LLM API settings
     llm_provider: str = "anthropic"
@@ -26,27 +26,37 @@ class Settings(BaseSettings):
     port: int = 8000
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
     )
 
     @property
     def orcid_auth_url(self) -> str:
         """Get ORCID authorization URL"""
-        base = "https://orcid.org" if self.orcid_environment == "production" else "https://sandbox.orcid.org"
+        base = (
+            "https://orcid.org"
+            if self.orcid_environment == "production"
+            else "https://sandbox.orcid.org"
+        )
         return f"{base}/oauth/authorize"
 
     @property
     def orcid_token_url(self) -> str:
         """Get ORCID token URL"""
-        base = "https://orcid.org" if self.orcid_environment == "production" else "https://sandbox.orcid.org"
+        base = (
+            "https://orcid.org"
+            if self.orcid_environment == "production"
+            else "https://sandbox.orcid.org"
+        )
         return f"{base}/oauth/token"
 
     @property
     def orcid_api_url(self) -> str:
         """Get ORCID API URL"""
-        base = "https://pub.orcid.org" if self.orcid_environment == "production" else "https://pub.sandbox.orcid.org"
+        base = (
+            "https://pub.orcid.org"
+            if self.orcid_environment == "production"
+            else "https://pub.sandbox.orcid.org"
+        )
         return base
 
     @property
