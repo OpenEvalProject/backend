@@ -121,6 +121,7 @@ class ManuscriptIngester:
             doi = submission.get('manuscript_doi')
             title = submission.get('manuscript_title')
             abstract = None
+            pub_date = None
 
             if metadata_file.exists():
                 try:
@@ -130,18 +131,20 @@ class ManuscriptIngester:
                         doi = metadata.get('doi') or doi
                         title = metadata.get('title') or title
                         abstract = metadata.get('abstract')
+                        pub_date = metadata.get('pub_date')
                 except Exception as e:
                     logger.warning(f"Could not load metadata from {metadata_file}: {e}")
 
             # Step 1: Insert manuscript
             cursor.execute("""
-                INSERT OR REPLACE INTO manuscript (id, doi, title, abstract, content, created_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR REPLACE INTO manuscript (id, doi, title, abstract, pub_date, content, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (
                 manuscript_id,
                 doi,
                 title,
                 abstract,
+                pub_date,
                 manuscript_text
             ))
 

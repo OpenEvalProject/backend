@@ -96,6 +96,7 @@ class ManuscriptMetadata(BaseModel):
     doi: Optional[str] = None
     title: Optional[str] = None
     abstract: Optional[str] = None
+    pub_date: Optional[str] = None
     created_at: str
 
 
@@ -103,6 +104,7 @@ class ManuscriptSummary(BaseModel):
     """Manuscript summary for list view"""
     id: str
     title: Optional[str] = None
+    pub_date: Optional[str] = None
     created_at: str
     total_claims: int
     total_results_llm: int

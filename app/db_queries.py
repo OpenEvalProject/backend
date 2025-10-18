@@ -49,6 +49,7 @@ def get_manuscripts_list(
         SELECT
             m.id,
             m.title,
+            m.pub_date,
             m.created_at,
             (SELECT COUNT(*) FROM claim WHERE manuscript_id = m.id) as total_claims,
             (SELECT COUNT(*) FROM result_llm WHERE manuscript_id = m.id) as total_results_llm,
@@ -80,19 +81,20 @@ def get_manuscripts_list(
 
     manuscripts = []
     for row in rows:
-        has_peer_reviews = bool(row[6])
+        has_peer_reviews = bool(row[7])
         manuscripts.append(ManuscriptSummary(
             id=row[0],
             title=row[1],
-            created_at=row[2],
-            total_claims=row[3],
-            total_results_llm=row[4],
-            total_results_peer=row[5],
+            pub_date=row[2],
+            created_at=row[3],
+            total_claims=row[4],
+            total_results_llm=row[5],
+            total_results_peer=row[6],
             has_peer_reviews=has_peer_reviews,
-            total_comparisons=row[7],
-            agree_count=row[8] if has_peer_reviews else None,
-            disjoint_count=row[9] if has_peer_reviews else None,
-            disagree_count=row[10] if has_peer_reviews else None
+            total_comparisons=row[8],
+            agree_count=row[9] if has_peer_reviews else None,
+            disjoint_count=row[10] if has_peer_reviews else None,
+            disagree_count=row[11] if has_peer_reviews else None
         ))
 
     return manuscripts, total_count
@@ -116,7 +118,7 @@ def get_manuscript_detail(
 
     # Get manuscript metadata
     cursor.execute("""
-        SELECT id, doi, title, abstract, created_at
+        SELECT id, doi, title, abstract, pub_date, created_at
         FROM manuscript
         WHERE id = ?
     """, (manuscript_id,))
@@ -130,7 +132,8 @@ def get_manuscript_detail(
         doi=row[1],
         title=row[2],
         abstract=row[3],
-        created_at=row[4]
+        pub_date=row[4],
+        created_at=row[5]
     )
 
     # Get summary stats
