@@ -116,14 +116,32 @@ class ManuscriptIngester:
             # Generate manuscript_id: article_id-version
             manuscript_id = f"{article_id}-{version}"
 
+            # Load manuscript metadata from manuscript_metadata.json if it exists
+            metadata_file = file_path.parent / "manuscript_metadata.json"
+            doi = submission.get('manuscript_doi')
+            title = submission.get('manuscript_title')
+            abstract = None
+
+            if metadata_file.exists():
+                try:
+                    with open(metadata_file, 'r', encoding='utf-8') as mf:
+                        metadata = json.load(mf)
+                        # Prefer metadata from JSON file over submission data
+                        doi = metadata.get('doi') or doi
+                        title = metadata.get('title') or title
+                        abstract = metadata.get('abstract')
+                except Exception as e:
+                    logger.warning(f"Could not load metadata from {metadata_file}: {e}")
+
             # Step 1: Insert manuscript
             cursor.execute("""
-                INSERT OR REPLACE INTO manuscript (id, doi, title, content, created_at)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR REPLACE INTO manuscript (id, doi, title, abstract, content, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (
                 manuscript_id,
-                submission.get('manuscript_doi'),
-                submission.get('manuscript_title'),
+                doi,
+                title,
+                abstract,
                 manuscript_text
             ))
 

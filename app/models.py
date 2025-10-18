@@ -95,6 +95,7 @@ class ManuscriptMetadata(BaseModel):
     id: str
     doi: Optional[str] = None
     title: Optional[str] = None
+    abstract: Optional[str] = None
     created_at: str
 
 

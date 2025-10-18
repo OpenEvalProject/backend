@@ -116,7 +116,7 @@ def get_manuscript_detail(
 
     # Get manuscript metadata
     cursor.execute("""
-        SELECT id, doi, title, created_at
+        SELECT id, doi, title, abstract, created_at
         FROM manuscript
         WHERE id = ?
     """, (manuscript_id,))
@@ -129,7 +129,8 @@ def get_manuscript_detail(
         id=row[0],
         doi=row[1],
         title=row[2],
-        created_at=row[3]
+        abstract=row[3],
+        created_at=row[4]
     )
 
     # Get summary stats
