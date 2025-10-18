@@ -43,30 +43,27 @@ def get_manuscripts_list(
     cursor.execute("SELECT COUNT(*) FROM manuscript")
     total_count = cursor.fetchone()[0]
 
-    # Build query for manuscript list with subqueries to avoid cartesian product
+    # Build query for manuscript list using JOINs and aggregation for better performance
     query = """
         SELECT
             m.id,
             m.title,
             m.created_at,
-            (SELECT COUNT(*) FROM claim WHERE manuscript_id = m.id) as total_claims,
-            (SELECT COUNT(*) FROM result_llm WHERE manuscript_id = m.id) as total_results_llm,
-            (SELECT COUNT(*) FROM result_peer rp
-             JOIN peer p ON rp.peer_id = p.id
-             WHERE p.manuscript_id = m.id) as total_results_peer,
-            (SELECT COUNT(*) > 0 FROM peer WHERE manuscript_id = m.id) as has_peer_reviews,
-            (SELECT COUNT(*) FROM comparison cmp
-             WHERE cmp.llm_result_id IN (SELECT id FROM result_llm WHERE manuscript_id = m.id)) as total_comparisons,
-            (SELECT COUNT(*) FROM comparison cmp
-             WHERE cmp.llm_result_id IN (SELECT id FROM result_llm WHERE manuscript_id = m.id)
-             AND cmp.agreement_status = 'agree') as agree_count,
-            (SELECT COUNT(*) FROM comparison cmp
-             WHERE cmp.llm_result_id IN (SELECT id FROM result_llm WHERE manuscript_id = m.id)
-             AND cmp.agreement_status = 'partial') as partial_count,
-            (SELECT COUNT(*) FROM comparison cmp
-             WHERE cmp.llm_result_id IN (SELECT id FROM result_llm WHERE manuscript_id = m.id)
-             AND cmp.agreement_status = 'disagree') as disagree_count
+            COUNT(DISTINCT c.id) as total_claims,
+            COUNT(DISTINCT rl.id) as total_results_llm,
+            COUNT(DISTINCT rp.id) as total_results_peer,
+            CASE WHEN COUNT(DISTINCT p.id) > 0 THEN 1 ELSE 0 END as has_peer_reviews,
+            COUNT(DISTINCT cmp.id) as total_comparisons,
+            SUM(CASE WHEN cmp.agreement_status = 'agree' THEN 1 ELSE 0 END) as agree_count,
+            SUM(CASE WHEN cmp.agreement_status = 'partial' THEN 1 ELSE 0 END) as partial_count,
+            SUM(CASE WHEN cmp.agreement_status = 'disagree' THEN 1 ELSE 0 END) as disagree_count
         FROM manuscript m
+        LEFT JOIN claim c ON m.id = c.manuscript_id
+        LEFT JOIN result_llm rl ON m.id = rl.manuscript_id
+        LEFT JOIN peer p ON m.id = p.manuscript_id
+        LEFT JOIN result_peer rp ON p.id = rp.peer_id
+        LEFT JOIN comparison cmp ON rl.id = cmp.llm_result_id
+        GROUP BY m.id, m.title, m.created_at
         ORDER BY m.created_at DESC
     """
 

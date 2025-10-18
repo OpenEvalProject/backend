@@ -17,8 +17,13 @@ from app.schema import AUTH_TABLES_SQL, SCHEMA_SQL
 logger = logging.getLogger(__name__)
 
 
-def init_database():
-    """Initialize the database with new schema while preserving auth tables."""
+def init_database(drop_tables: bool = False):
+    """
+    Initialize the database with new schema while preserving auth tables.
+
+    Args:
+        drop_tables: If True, drop and recreate all tables. If False, only create missing tables.
+    """
     db_path = Path(settings.database_path)
     logger.info(f"Initializing database at: {db_path}")
 
@@ -37,47 +42,74 @@ def init_database():
 
         logger.info(f"Found {len(existing_tables)} existing tables")
 
-        # Temporarily disable foreign keys to drop tables
-        cursor.execute("PRAGMA foreign_keys = OFF")
+        if drop_tables:
+            # Temporarily disable foreign keys to drop tables
+            cursor.execute("PRAGMA foreign_keys = OFF")
 
-        # Tables to drop (old schema)
-        tables_to_drop = [
-            'papers',
-            'claims',
-            'analysis_summary',
-            'paper_claims',
-            'llm_evaluations',
-            'review_claims',
-            'concordance_analysis',
-            'claims_v3',
-            'results_v3',
-            'results_concordance',
-            # Drop all existing schema tables to recreate them
-            'claim',
-            'claim_result',
-            'claim_result_llm',
-            'claim_result_peer',
-            'comparison',
-            'content',
-            'manuscript',
-            'peer',
-            'prompt',
-            'result',
-            'result_llm',
-            'result_peer',
-            'submissions'
-        ]
+            # Tables to drop (old schema)
+            tables_to_drop = [
+                'papers',
+                'claims',
+                'analysis_summary',
+                'paper_claims',
+                'llm_evaluations',
+                'review_claims',
+                'concordance_analysis',
+                'claims_v3',
+                'results_v3',
+                'results_concordance',
+                # Drop all existing schema tables to recreate them
+                'claim',
+                'claim_result',
+                'claim_result_llm',
+                'claim_result_peer',
+                'comparison',
+                'content',
+                'manuscript',
+                'peer',
+                'prompt',
+                'result',
+                'result_llm',
+                'result_peer',
+                'submissions'
+            ]
 
-        # Drop old tables
-        for table in tables_to_drop:
-            if table in existing_tables:
-                logger.info(f"Dropping old table: {table}")
-                cursor.execute(f"DROP TABLE IF EXISTS {table}")
+            # Drop old tables
+            for table in tables_to_drop:
+                if table in existing_tables:
+                    logger.info(f"Dropping old table: {table}")
+                    cursor.execute(f"DROP TABLE IF EXISTS {table}")
 
-        conn.commit()
+            conn.commit()
 
-        # Re-enable foreign keys
-        cursor.execute("PRAGMA foreign_keys = ON")
+            # Re-enable foreign keys
+            cursor.execute("PRAGMA foreign_keys = ON")
+        else:
+            # Only drop old schema tables that don't match current schema
+            old_tables_to_drop = [
+                'papers',
+                'claims',
+                'analysis_summary',
+                'paper_claims',
+                'llm_evaluations',
+                'review_claims',
+                'concordance_analysis',
+                'claims_v3',
+                'results_v3',
+                'results_concordance',
+                'claim_result',  # Old junction table
+                'content',  # Old content table
+                'result',  # Old result table
+                'submissions'  # Old submissions table
+            ]
+
+            cursor.execute("PRAGMA foreign_keys = OFF")
+            for table in old_tables_to_drop:
+                if table in existing_tables:
+                    logger.info(f"Dropping obsolete table: {table}")
+                    cursor.execute(f"DROP TABLE IF EXISTS {table}")
+            conn.commit()
+            cursor.execute("PRAGMA foreign_keys = ON")
 
         logger.info("Creating auth tables (users, sessions)...")
         cursor.executescript(AUTH_TABLES_SQL)
