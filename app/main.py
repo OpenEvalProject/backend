@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.db_init import init_database
 from app.models import HealthResponse
-from app.routers import auth, manuscripts
+from app.routers import auth, manuscripts, search
 
 # Configure logging
 logging.basicConfig(
@@ -48,6 +48,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(manuscripts.router)
+app.include_router(search.router)
 
 
 @app.get("/health", response_model=HealthResponse)

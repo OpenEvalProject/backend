@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS claim (
     evidence_type TEXT NOT NULL,
     evidence_reasoning TEXT NOT NULL,
     prompt_id TEXT,
+    embedding BLOB,
+    embedding_model TEXT,
+    embedding_created_at TIMESTAMP,
     FOREIGN KEY (manuscript_id) REFERENCES manuscript(id) ON DELETE CASCADE,
     FOREIGN KEY (prompt_id) REFERENCES prompt(id)
 );
@@ -115,6 +118,7 @@ CREATE TABLE IF NOT EXISTS claim_result_peer (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_claim_manuscript ON claim(manuscript_id);
 CREATE INDEX IF NOT EXISTS idx_claim_prompt ON claim(prompt_id);
+CREATE INDEX IF NOT EXISTS idx_claim_embedding_created ON claim(embedding_created_at);
 CREATE INDEX IF NOT EXISTS idx_peer_manuscript ON peer(manuscript_id);
 CREATE INDEX IF NOT EXISTS idx_result_llm_manuscript ON result_llm(manuscript_id);
 CREATE INDEX IF NOT EXISTS idx_result_llm_prompt ON result_llm(prompt_id);

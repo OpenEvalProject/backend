@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "claude-sonnet-4-5-20250929"
 
+    # OpenAI API settings (for embeddings)
+    openai_api_key: str = ""
+
     # Application settings
     secret_key: str = "dev-secret-key-change-in-production"
     database_path: str = "./claim_verification.db"
