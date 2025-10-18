@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/manuscripts", tags=["manuscripts"])
 
 @router.get("", response_model=ManuscriptListResponse)
 async def list_manuscripts(
-    limit: Optional[int] = Query(None, description="Maximum number of manuscripts to return"),
+    limit: Optional[int] = Query(50, description="Maximum number of manuscripts to return (default: 50)"),
     offset: int = Query(0, description="Number of manuscripts to skip")
 ):
     """
@@ -30,6 +30,8 @@ async def list_manuscripts(
     - Basic metadata (id, title, date)
     - Total claim count
     - Agreement counts (if peer reviews exist)
+
+    Default limit is 50 manuscripts for faster initial load.
     """
     try:
         with get_db() as conn:
