@@ -77,8 +77,8 @@ async def callback(request: Request, code: str, state: str, response: Response):
         # Create session
         session_id = create_session(user_id)
 
-        # Set session cookie
-        response = RedirectResponse(url="/submit.html", status_code=302)
+        # Set session cookie and redirect to home page
+        response = RedirectResponse(url="/", status_code=302)
         response.set_cookie(
             key="session_id",
             value=session_id,
