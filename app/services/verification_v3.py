@@ -468,15 +468,15 @@ Your task is to compare these results and identify areas of agreement and disagr
 ## Matching Strategy
 1. Identify which LLM results and peer review results address the same or overlapping claims
 2. Look for claim_ids that appear in both LLM and peer results
-3. A pair may have disjoint overlap (some shared claims, some unique)
+3. Results may address overlapping or completely different claims
 
 ## Agreement Status
 - **agree**: Both LLM and reviewers have the same status evaluation (both SUPPORTED, both UNSUPPORTED, or both UNCERTAIN)
 - **disagree**: LLM and reviewers have different status evaluations
-- **disjoint**: Results have overlapping but not identical claim sets, making direct comparison complex
+- **disjoint**: One evaluator produced a result, but the other did not (one side has no result)
 
 ## Notes
-Provide brief explanation of the comparison, especially for disagreements or disjoint matches.
+Provide brief explanation of the comparison, especially for disagreements or disjoint cases.
 
 # LLM Results
 
