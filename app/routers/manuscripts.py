@@ -11,11 +11,63 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_db
 from app.db_queries import get_manuscript_detail, get_manuscripts_list
-from app.models import ErrorResponse, ManuscriptDetail, ManuscriptListResponse
+from app.models import AggregateStatistics, ErrorResponse, ManuscriptDetail, ManuscriptListResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/manuscripts", tags=["manuscripts"])
+
+
+@router.get("/stats", response_model=AggregateStatistics)
+async def get_aggregate_statistics():
+    """
+    Get aggregate statistics across all manuscripts.
+
+    Returns:
+    - Total number of manuscripts
+    - Total claims extracted
+    - Total LLM results
+    - Total peer results
+    - Total comparisons/assessments
+    """
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Count manuscripts
+            cursor.execute("SELECT COUNT(*) FROM manuscript")
+            total_manuscripts = cursor.fetchone()[0]
+
+            # Count claims
+            cursor.execute("SELECT COUNT(*) FROM claim")
+            total_claims = cursor.fetchone()[0]
+
+            # Count LLM results
+            cursor.execute("SELECT COUNT(*) FROM result_llm")
+            total_llm_results = cursor.fetchone()[0]
+
+            # Count peer results
+            cursor.execute("SELECT COUNT(*) FROM result_peer")
+            total_peer_results = cursor.fetchone()[0]
+
+            # Count comparisons
+            cursor.execute("SELECT COUNT(*) FROM comparison")
+            total_comparisons = cursor.fetchone()[0]
+
+            return AggregateStatistics(
+                total_manuscripts=total_manuscripts,
+                total_claims=total_claims,
+                total_llm_results=total_llm_results,
+                total_peer_results=total_peer_results,
+                total_comparisons=total_comparisons
+            )
+
+    except Exception as e:
+        logger.error(f"Error getting aggregate statistics: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving statistics: {str(e)}"
+        )
 
 
 @router.get("", response_model=ManuscriptListResponse)

@@ -468,15 +468,15 @@ Your task is to compare these results and identify areas of agreement and disagr
 ## Matching Strategy
 1. Identify which LLM results and peer review results address the same or overlapping claims
 2. Look for claim_ids that appear in both LLM and peer results
-3. A pair may have partial overlap (some shared claims, some unique)
+3. A pair may have disjoint overlap (some shared claims, some unique)
 
 ## Agreement Status
 - **agree**: Both LLM and reviewers have the same status evaluation (both SUPPORTED, both UNSUPPORTED, or both UNCERTAIN)
 - **disagree**: LLM and reviewers have different status evaluations
-- **partial**: Results have overlapping but not identical claim sets, making direct comparison complex
+- **disjoint**: Results have overlapping but not identical claim sets, making direct comparison complex
 
 ## Notes
-Provide brief explanation of the comparison, especially for disagreements or partial matches.
+Provide brief explanation of the comparison, especially for disagreements or disjoint matches.
 
 # LLM Results
 
@@ -617,7 +617,7 @@ def calculate_results_metrics(
     total_comparisons = len(concordance)
     agreements = sum(1 for row in concordance if row.agreement_status == "agree")
     disagreements = sum(1 for row in concordance if row.agreement_status == "disagree")
-    partial = sum(1 for row in concordance if row.agreement_status == "partial")
+    disjoint = sum(1 for row in concordance if row.agreement_status == "disjoint")
 
     agreement_rate = (
         (agreements / total_comparisons * 100) if total_comparisons > 0 else 0.0
@@ -627,6 +627,6 @@ def calculate_results_metrics(
         "total_comparisons": total_comparisons,
         "agreements": agreements,
         "disagreements": disagreements,
-        "partial": partial,
+        "disjoint": disjoint,
         "agreement_rate": agreement_rate,
     }

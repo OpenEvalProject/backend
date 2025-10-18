@@ -81,7 +81,7 @@ class ComparisonFull(BaseModel):
     peer_result_id: Optional[str] = None
     llm_status: Optional[str] = None
     peer_status: Optional[str] = None
-    agreement_status: str  # agree, disagree, partial
+    agreement_status: str  # agree, disagree, disjoint
     notes: Optional[str] = None
     n_llm: Optional[int] = None
     n_peer: Optional[int] = None
@@ -109,7 +109,7 @@ class ManuscriptSummary(BaseModel):
     total_comparisons: int
     # Agreement counts (empty if no peer reviews)
     agree_count: Optional[int] = None
-    partial_count: Optional[int] = None
+    disjoint_count: Optional[int] = None
     disagree_count: Optional[int] = None
     has_peer_reviews: bool
 
@@ -136,3 +136,12 @@ class ManuscriptListResponse(BaseModel):
     """Response for manuscripts list endpoint"""
     manuscripts: List[ManuscriptSummary]
     total_count: int
+
+
+class AggregateStatistics(BaseModel):
+    """Aggregate statistics across all manuscripts"""
+    total_manuscripts: int
+    total_claims: int
+    total_llm_results: int
+    total_peer_results: int
+    total_comparisons: int

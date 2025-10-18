@@ -64,7 +64,7 @@ def get_manuscripts_list(
              WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
             (SELECT COUNT(cmp.id) FROM comparison cmp
              JOIN result_llm rl ON cmp.llm_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'partial') as partial_count,
+             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count,
             (SELECT COUNT(cmp.id) FROM comparison cmp
              JOIN result_llm rl ON cmp.llm_result_id = rl.id
              WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count
@@ -91,7 +91,7 @@ def get_manuscripts_list(
             has_peer_reviews=has_peer_reviews,
             total_comparisons=row[7],
             agree_count=row[8] if has_peer_reviews else None,
-            partial_count=row[9] if has_peer_reviews else None,
+            disjoint_count=row[9] if has_peer_reviews else None,
             disagree_count=row[10] if has_peer_reviews else None
         ))
 
