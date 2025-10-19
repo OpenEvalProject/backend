@@ -54,12 +54,25 @@ async def get_aggregate_statistics():
             cursor.execute("SELECT COUNT(*) FROM comparison")
             total_comparisons = cursor.fetchone()[0]
 
+            # Count manuscripts with peer reviews (manuscripts that have comparisons)
+            cursor.execute("""
+                SELECT COUNT(DISTINCT m.id)
+                FROM manuscript m
+                WHERE EXISTS (
+                    SELECT 1 FROM comparison cmp
+                    JOIN result_llm rl ON cmp.llm_result_id = rl.id
+                    WHERE rl.manuscript_id = m.id
+                )
+            """)
+            manuscripts_with_peer_reviews = cursor.fetchone()[0]
+
             return AggregateStatistics(
                 total_manuscripts=total_manuscripts,
                 total_claims=total_claims,
                 total_llm_results=total_llm_results,
                 total_peer_results=total_peer_results,
-                total_comparisons=total_comparisons
+                total_comparisons=total_comparisons,
+                manuscripts_with_peer_reviews=manuscripts_with_peer_reviews
             )
 
     except Exception as e:

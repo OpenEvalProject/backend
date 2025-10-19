@@ -148,3 +148,4 @@ class AggregateStatistics(BaseModel):
     total_llm_results: int
     total_peer_results: int
     total_comparisons: int
+    manuscripts_with_peer_reviews: int
