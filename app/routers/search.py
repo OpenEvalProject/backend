@@ -20,7 +20,8 @@ router = APIRouter(prefix="/api/claims", tags=["search"])
 class ClaimSearchResult(BaseModel):
     """Single claim search result with similarity score"""
 
-    claim_id: str
+    claim_id: str  # UUID
+    claim_display_id: Optional[str] = None  # Human-readable ID like "C1", "C2"
     manuscript_id: str
     claim: str
     claim_type: str
@@ -112,6 +113,7 @@ def search_similar_claims(
         cursor.execute("""
             SELECT
                 id,
+                claim_id,
                 manuscript_id,
                 claim,
                 claim_type,
@@ -127,7 +129,7 @@ def search_similar_claims(
         results = []
 
         for row in cursor.fetchall():
-            claim_id, manuscript_id, claim, claim_type, source_text, evidence_type, evidence_reasoning, embedding_blob = row
+            uuid, claim_display_id, manuscript_id, claim, claim_type, source_text, evidence_type, evidence_reasoning, embedding_blob = row
 
             # Deserialize embedding
             try:
@@ -140,7 +142,8 @@ def search_similar_claims(
             similarity = cosine_similarity(query_embedding, claim_embedding)
 
             results.append(ClaimSearchResult(
-                claim_id=claim_id,
+                claim_id=uuid,
+                claim_display_id=claim_display_id,
                 manuscript_id=manuscript_id,
                 claim=claim,
                 claim_type=claim_type,
