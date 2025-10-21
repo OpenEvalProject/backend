@@ -204,13 +204,14 @@ class ManuscriptIngester:
                 result_id = result_data.get('id')
                 cursor.execute("""
                     INSERT OR REPLACE INTO result_llm (
-                        id, manuscript_id, reviewer_id, reviewer_name,
+                        id, manuscript_id, result, reviewer_id, reviewer_name,
                         result_status, result_reasoning, prompt_id
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     result_id,
                     manuscript_id,
+                    result_data.get('result', ''),
                     result_data.get('reviewer_id', 'LLM'),
                     result_data.get('reviewer_name', 'LLM'),
                     result_data.get('result_status', ''),
@@ -237,13 +238,14 @@ class ManuscriptIngester:
                     result_id = result_data.get('id')
                     cursor.execute("""
                         INSERT OR REPLACE INTO result_peer (
-                            id, peer_id, reviewer_id, reviewer_name,
+                            id, peer_id, result, reviewer_id, reviewer_name,
                             result_status, result_reasoning, prompt_id
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         result_id,
                         peer_id,
+                        result_data.get('result', ''),
                         result_data.get('reviewer_id', 'Peer'),
                         result_data.get('reviewer_name', 'Peer'),
                         result_data.get('result_status', ''),
