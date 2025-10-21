@@ -113,6 +113,7 @@ def migrate_to_new_schema():
                 content_id TEXT NOT NULL,
                 result_id TEXT NOT NULL,
                 result_type TEXT NOT NULL,
+                result TEXT NOT NULL,
                 reviewer_id TEXT NOT NULL,
                 reviewer_name TEXT NOT NULL,
                 result_status TEXT NOT NULL,
@@ -143,16 +144,16 @@ def migrate_to_new_schema():
             CREATE TABLE IF NOT EXISTS comparison (
                 id TEXT PRIMARY KEY,
                 submission_id TEXT NOT NULL,
-                llm_result_id TEXT,
+                openeval_result_id TEXT,
                 peer_result_id TEXT,
-                llm_status TEXT,
+                openeval_status TEXT,
                 peer_status TEXT,
                 agreement_status TEXT NOT NULL,
-                notes TEXT,
+                comparison TEXT,
                 prompt_id TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (submission_id) REFERENCES submissions (id) ON DELETE CASCADE,
-                FOREIGN KEY (llm_result_id) REFERENCES result (id) ON DELETE CASCADE,
+                FOREIGN KEY (openeval_result_id) REFERENCES result (id) ON DELETE CASCADE,
                 FOREIGN KEY (peer_result_id) REFERENCES result (id) ON DELETE CASCADE,
                 FOREIGN KEY (prompt_id) REFERENCES prompt (id)
             )

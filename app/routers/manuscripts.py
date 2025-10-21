@@ -60,7 +60,7 @@ async def get_aggregate_statistics():
                 FROM manuscript m
                 WHERE EXISTS (
                     SELECT 1 FROM comparison cmp
-                    JOIN result_llm rl ON cmp.llm_result_id = rl.id
+                    JOIN result_llm rl ON cmp.openeval_result_id = rl.id
                     WHERE rl.manuscript_id = m.id
                 )
             """)

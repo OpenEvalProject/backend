@@ -112,13 +112,14 @@ def load_cllm_export(json_path: Path, user_id: Optional[int] = None) -> str:
         # ====================================================================
         for result in data['results']:
             cursor.execute("""
-                INSERT INTO result (id, content_id, result_id, result_type, reviewer_id, reviewer_name, result_status, result_reasoning, prompt_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO result (id, content_id, result_id, result_type, result, reviewer_id, reviewer_name, result_status, result_reasoning, prompt_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 result['id'],
                 result['content_id'],
                 result['result_id'],
                 result['result_type'],
+                result['result'],
                 result['reviewer_id'],
                 result['reviewer_name'],
                 result['result_status'],
@@ -144,17 +145,17 @@ def load_cllm_export(json_path: Path, user_id: Optional[int] = None) -> str:
         # ====================================================================
         for comparison in data['comparisons']:
             cursor.execute("""
-                INSERT INTO comparison (id, submission_id, llm_result_id, peer_result_id, llm_status, peer_status, agreement_status, notes, prompt_id, created_at)
+                INSERT INTO comparison (id, submission_id, openeval_result_id, peer_result_id, openeval_status, peer_status, agreement_status, comparison, prompt_id, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 comparison['id'],
                 comparison['submission_id'],
-                comparison.get('llm_result_id'),
+                comparison.get('openeval_result_id'),
                 comparison.get('peer_result_id'),
-                comparison.get('llm_status'),
+                comparison.get('openeval_status'),
                 comparison.get('peer_status'),
                 comparison['agreement_status'],
-                comparison.get('notes'),
+                comparison.get('comparison'),
                 comparison['prompt_id'],
                 comparison['created_at'],
             ))

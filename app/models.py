@@ -58,6 +58,7 @@ class ResultLLM(BaseModel):
     """LLM evaluation result"""
     id: str  # e.g., "R1", "R2"
     claim_ids: List[str]  # List of claim IDs this result evaluates
+    result: str  # Description of the scientific finding (2-3 sentences)
     reviewer_id: Optional[str] = None
     reviewer_name: Optional[str] = None
     result_status: str  # SUPPORTED, UNSUPPORTED, UNCERTAIN
@@ -68,6 +69,7 @@ class ResultPeer(BaseModel):
     """Peer evaluation result"""
     id: str  # e.g., "R1", "R2"
     claim_ids: List[str]  # List of claim IDs this result evaluates
+    result: str  # Description of the scientific finding (2-3 sentences)
     reviewer_id: Optional[str] = None
     reviewer_name: Optional[str] = None
     result_status: str  # SUPPORTED, UNSUPPORTED, UNCERTAIN
@@ -75,18 +77,18 @@ class ResultPeer(BaseModel):
 
 
 class ComparisonFull(BaseModel):
-    """Full comparison object between LLM and peer results"""
+    """Full comparison object between OpenEval and peer results"""
     id: str
-    llm_result_id: Optional[str] = None
+    openeval_result_id: Optional[str] = None
     peer_result_id: Optional[str] = None
-    llm_status: Optional[str] = None
+    openeval_status: Optional[str] = None
     peer_status: Optional[str] = None
-    agreement_status: str  # agree, disagree, disjoint
-    notes: Optional[str] = None
-    n_llm: Optional[int] = None
+    agreement_status: str  # agree, disagree, partial, disjoint
+    comparison: Optional[str] = None
+    n_openeval: Optional[int] = None
     n_peer: Optional[int] = None
     n_itx: Optional[int] = None
-    llm_reasoning: Optional[str] = None
+    openeval_reasoning: Optional[str] = None
     peer_reasoning: Optional[str] = None
 
 
@@ -112,8 +114,9 @@ class ManuscriptSummary(BaseModel):
     total_comparisons: int
     # Agreement counts (empty if no peer reviews)
     agree_count: Optional[int] = None
-    disjoint_count: Optional[int] = None
+    partial_count: Optional[int] = None
     disagree_count: Optional[int] = None
+    disjoint_count: Optional[int] = None
     has_peer_reviews: bool
 
 

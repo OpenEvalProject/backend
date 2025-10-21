@@ -58,17 +58,20 @@ def get_manuscripts_list(
              WHERE p.manuscript_id = m.id) as total_results_peer,
             (SELECT COUNT(*) > 0 FROM peer WHERE manuscript_id = m.id) as has_peer_reviews,
             (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.llm_result_id = rl.id
+             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
              WHERE rl.manuscript_id = m.id) as total_comparisons,
             (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.llm_result_id = rl.id
+             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
              WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
             (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.llm_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count,
+             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
+             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'partial') as partial_count,
             (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.llm_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count
+             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
+             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count,
+            (SELECT COUNT(cmp.id) FROM comparison cmp
+             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
+             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count
         FROM manuscript m
         ORDER BY m.created_at DESC
     """
@@ -93,8 +96,9 @@ def get_manuscripts_list(
             has_peer_reviews=has_peer_reviews,
             total_comparisons=row[8],
             agree_count=row[9] if has_peer_reviews else None,
-            disjoint_count=row[10] if has_peer_reviews else None,
-            disagree_count=row[11] if has_peer_reviews else None
+            partial_count=row[10] if has_peer_reviews else None,
+            disagree_count=row[11] if has_peer_reviews else None,
+            disjoint_count=row[12] if has_peer_reviews else None
         ))
 
     return manuscripts, total_count
@@ -229,7 +233,7 @@ def get_results_llm_for_manuscript(
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, reviewer_id, reviewer_name, result_status, result_reasoning
+        SELECT id, result, reviewer_id, reviewer_name, result_status, result_reasoning
         FROM result_llm
         WHERE manuscript_id = ?
         ORDER BY id
@@ -252,10 +256,11 @@ def get_results_llm_for_manuscript(
         results.append(ResultLLM(
             id=result_id,
             claim_ids=claim_ids,
-            reviewer_id=row[1],
-            reviewer_name=row[2],
-            result_status=row[3],
-            result_reasoning=row[4]
+            result=row[1],
+            reviewer_id=row[2],
+            reviewer_name=row[3],
+            result_status=row[4],
+            result_reasoning=row[5]
         ))
 
     return results
@@ -280,7 +285,7 @@ def get_results_peer_for_manuscript(
     peer_id = peer_row[0]
 
     cursor.execute("""
-        SELECT id, reviewer_id, reviewer_name, result_status, result_reasoning
+        SELECT id, result, reviewer_id, reviewer_name, result_status, result_reasoning
         FROM result_peer
         WHERE peer_id = ?
         ORDER BY id
@@ -303,10 +308,11 @@ def get_results_peer_for_manuscript(
         results.append(ResultPeer(
             id=result_id,
             claim_ids=claim_ids,
-            reviewer_id=row[1],
-            reviewer_name=row[2],
-            result_status=row[3],
-            result_reasoning=row[4]
+            result=row[1],
+            reviewer_id=row[2],
+            reviewer_name=row[3],
+            result_status=row[4],
+            result_reasoning=row[5]
         ))
 
     return results
@@ -322,21 +328,21 @@ def get_comparisons_for_manuscript(
     cursor.execute("""
         SELECT
             cmp.id,
-            cmp.llm_result_id,
+            cmp.openeval_result_id,
             cmp.peer_result_id,
-            cmp.llm_status,
+            cmp.openeval_status,
             cmp.peer_status,
             cmp.agreement_status,
-            cmp.notes,
-            cmp.n_llm,
+            cmp.comparison,
+            cmp.n_openeval,
             cmp.n_peer,
             cmp.n_itx,
-            rl.result_reasoning as llm_reasoning,
+            rl.result_reasoning as openeval_reasoning,
             rp.result_reasoning as peer_reasoning
         FROM comparison cmp
-        LEFT JOIN result_llm rl ON cmp.llm_result_id = rl.id
+        LEFT JOIN result_llm rl ON cmp.openeval_result_id = rl.id
         LEFT JOIN result_peer rp ON cmp.peer_result_id = rp.id
-        WHERE cmp.llm_result_id IN (
+        WHERE cmp.openeval_result_id IN (
             SELECT id FROM result_llm WHERE manuscript_id = ?
         )
         ORDER BY cmp.id
@@ -346,16 +352,16 @@ def get_comparisons_for_manuscript(
     for row in cursor.fetchall():
         comparisons.append(ComparisonFull(
             id=row[0],
-            llm_result_id=row[1],
+            openeval_result_id=row[1],
             peer_result_id=row[2],
-            llm_status=row[3],
+            openeval_status=row[3],
             peer_status=row[4],
             agreement_status=row[5],
-            notes=row[6],
-            n_llm=row[7],
+            comparison=row[6],
+            n_openeval=row[7],
             n_peer=row[8],
             n_itx=row[9],
-            llm_reasoning=row[10],
+            openeval_reasoning=row[10],
             peer_reasoning=row[11]
         ))
 

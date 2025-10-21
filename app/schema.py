@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS manuscript (
     id TEXT PRIMARY KEY,
     doi TEXT,
     title TEXT,
+    abstract TEXT,
+    pub_date TEXT,
     content TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -55,6 +57,7 @@ CREATE TABLE IF NOT EXISTS peer (
 CREATE TABLE IF NOT EXISTS result_llm (
     id TEXT PRIMARY KEY,
     manuscript_id TEXT NOT NULL,
+    result TEXT NOT NULL,
     reviewer_id TEXT,
     reviewer_name TEXT,
     result_status TEXT NOT NULL,
@@ -68,6 +71,7 @@ CREATE TABLE IF NOT EXISTS result_llm (
 CREATE TABLE IF NOT EXISTS result_peer (
     id TEXT PRIMARY KEY,
     peer_id TEXT NOT NULL,
+    result TEXT NOT NULL,
     reviewer_id TEXT,
     reviewer_name TEXT,
     result_status TEXT NOT NULL,
@@ -77,22 +81,22 @@ CREATE TABLE IF NOT EXISTS result_peer (
     FOREIGN KEY (prompt_id) REFERENCES prompt(id)
 );
 
--- Comparison table (concordance analysis between LLM and peer results)
+-- Comparison table (concordance analysis between OpenEval and peer results)
 CREATE TABLE IF NOT EXISTS comparison (
     id TEXT PRIMARY KEY,
-    llm_result_id TEXT,
+    openeval_result_id TEXT,
     peer_result_id TEXT,
-    llm_status TEXT,
+    openeval_status TEXT,
     peer_status TEXT,
     agreement_status TEXT NOT NULL,
-    notes TEXT,
-    n_llm INTEGER,
+    comparison TEXT,
+    n_openeval INTEGER,
     n_peer INTEGER,
     n_itx INTEGER,
-    llm_reasoning TEXT,
+    openeval_reasoning TEXT,
     peer_reasoning TEXT,
     prompt_id TEXT,
-    FOREIGN KEY (llm_result_id) REFERENCES result_llm(id) ON DELETE CASCADE,
+    FOREIGN KEY (openeval_result_id) REFERENCES result_llm(id) ON DELETE CASCADE,
     FOREIGN KEY (peer_result_id) REFERENCES result_peer(id) ON DELETE CASCADE,
     FOREIGN KEY (prompt_id) REFERENCES prompt(id)
 );
@@ -124,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_result_llm_manuscript ON result_llm(manuscript_id
 CREATE INDEX IF NOT EXISTS idx_result_llm_prompt ON result_llm(prompt_id);
 CREATE INDEX IF NOT EXISTS idx_result_peer_peer ON result_peer(peer_id);
 CREATE INDEX IF NOT EXISTS idx_result_peer_prompt ON result_peer(prompt_id);
-CREATE INDEX IF NOT EXISTS idx_comparison_llm_result ON comparison(llm_result_id);
+CREATE INDEX IF NOT EXISTS idx_comparison_openeval_result ON comparison(openeval_result_id);
 CREATE INDEX IF NOT EXISTS idx_comparison_peer_result ON comparison(peer_result_id);
 CREATE INDEX IF NOT EXISTS idx_comparison_prompt ON comparison(prompt_id);
 """
