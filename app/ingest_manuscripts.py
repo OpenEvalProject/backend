@@ -275,24 +275,24 @@ class ManuscriptIngester:
                     comp_id = f"{manuscript_id}-comparison-{i}"
                     cursor.execute("""
                         INSERT OR REPLACE INTO comparison (
-                            id, llm_result_id, peer_result_id,
-                            llm_status, peer_status, agreement_status, notes,
-                            n_llm, n_peer, n_itx,
-                            llm_reasoning, peer_reasoning, prompt_id
+                            id, openeval_result_id, peer_result_id,
+                            openeval_status, peer_status, agreement_status, comparison,
+                            n_openeval, n_peer, n_itx,
+                            openeval_reasoning, peer_reasoning, prompt_id
                         )
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         comp_id,
-                        comp_data.get('llm_result_id'),
+                        comp_data.get('openeval_result_id') or comp_data.get('llm_result_id'),
                         comp_data.get('peer_result_id'),
-                        comp_data.get('llm_status'),
+                        comp_data.get('openeval_status') or comp_data.get('llm_status'),
                         comp_data.get('peer_status'),
                         comp_data.get('agreement_status', ''),
-                        comp_data.get('notes'),
-                        comp_data.get('n_llm'),
+                        comp_data.get('comparison') or comp_data.get('notes'),
+                        comp_data.get('n_openeval') or comp_data.get('n_llm'),
                         comp_data.get('n_peer'),
                         comp_data.get('n_itx'),
-                        comp_data.get('llm_reasoning'),
+                        comp_data.get('openeval_reasoning') or comp_data.get('llm_reasoning'),
                         comp_data.get('peer_reasoning'),
                         compare_prompt_id
                     ))
