@@ -126,6 +126,12 @@ class ManuscriptSummaryStats(BaseModel):
     total_results_llm: int
     total_results_peer: int
     has_peer_reviews: bool
+    total_comparisons: int
+    # Agreement counts (empty if no peer reviews)
+    agree_count: Optional[int] = None
+    partial_count: Optional[int] = None
+    disagree_count: Optional[int] = None
+    disjoint_count: Optional[int] = None
 
 
 class ManuscriptDetail(BaseModel):

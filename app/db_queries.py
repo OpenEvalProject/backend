@@ -140,12 +140,27 @@ def get_manuscript_detail(
         created_at=row[5]
     )
 
-    # Get summary stats
+    # Get summary stats with agreement counts
     cursor.execute("""
         SELECT COUNT(DISTINCT c.id) as total_claims,
                COUNT(DISTINCT rl.id) as total_results_llm,
                COUNT(DISTINCT rp.id) as total_results_peer,
-               COUNT(DISTINCT p.id) > 0 as has_peer_reviews
+               COUNT(DISTINCT p.id) > 0 as has_peer_reviews,
+               (SELECT COUNT(*) FROM comparison cmp
+                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
+                WHERE rl2.manuscript_id = m.id) as total_comparisons,
+               (SELECT COUNT(*) FROM comparison cmp
+                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
+                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
+               (SELECT COUNT(*) FROM comparison cmp
+                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
+                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'partial') as partial_count,
+               (SELECT COUNT(*) FROM comparison cmp
+                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
+                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count,
+               (SELECT COUNT(*) FROM comparison cmp
+                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
+                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count
         FROM manuscript m
         LEFT JOIN claim c ON m.id = c.manuscript_id
         LEFT JOIN result_llm rl ON m.id = rl.manuscript_id
@@ -155,11 +170,17 @@ def get_manuscript_detail(
     """, (manuscript_id,))
 
     row = cursor.fetchone()
+    has_peer_reviews = bool(row[3])
     summary_stats = ManuscriptSummaryStats(
         total_claims=row[0],
         total_results_llm=row[1],
         total_results_peer=row[2],
-        has_peer_reviews=bool(row[3])
+        has_peer_reviews=has_peer_reviews,
+        total_comparisons=row[4],
+        agree_count=row[5] if has_peer_reviews else None,
+        partial_count=row[6] if has_peer_reviews else None,
+        disagree_count=row[7] if has_peer_reviews else None,
+        disjoint_count=row[8] if has_peer_reviews else None
     )
 
     # Get all claims
