@@ -127,6 +127,14 @@ class ManuscriptSummaryStats(BaseModel):
     total_results_peer: int
     has_peer_reviews: bool
     total_comparisons: int
+    # LLM result status counts
+    llm_supported_count: int
+    llm_unsupported_count: int
+    llm_uncertain_count: int
+    # Peer result status counts (empty if no peer reviews)
+    peer_supported_count: Optional[int] = None
+    peer_unsupported_count: Optional[int] = None
+    peer_uncertain_count: Optional[int] = None
     # Agreement counts (empty if no peer reviews)
     agree_count: Optional[int] = None
     partial_count: Optional[int] = None

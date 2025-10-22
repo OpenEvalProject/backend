@@ -140,7 +140,7 @@ def get_manuscript_detail(
         created_at=row[5]
     )
 
-    # Get summary stats with agreement counts
+    # Get summary stats with status and agreement counts
     cursor.execute("""
         SELECT COUNT(DISTINCT c.id) as total_claims,
                COUNT(DISTINCT rl.id) as total_results_llm,
@@ -149,6 +149,21 @@ def get_manuscript_detail(
                (SELECT COUNT(*) FROM comparison cmp
                 JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
                 WHERE rl2.manuscript_id = m.id) as total_comparisons,
+               (SELECT COUNT(*) FROM result_llm rl2
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Supported') as llm_supported_count,
+               (SELECT COUNT(*) FROM result_llm rl2
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Unsupported') as llm_unsupported_count,
+               (SELECT COUNT(*) FROM result_llm rl2
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Uncertain') as llm_uncertain_count,
+               (SELECT COUNT(*) FROM result_peer rp2
+                JOIN peer p2 ON rp2.peer_id = p2.id
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Supported') as peer_supported_count,
+               (SELECT COUNT(*) FROM result_peer rp2
+                JOIN peer p2 ON rp2.peer_id = p2.id
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Unsupported') as peer_unsupported_count,
+               (SELECT COUNT(*) FROM result_peer rp2
+                JOIN peer p2 ON rp2.peer_id = p2.id
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Uncertain') as peer_uncertain_count,
                (SELECT COUNT(*) FROM comparison cmp
                 JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
                 WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
@@ -177,10 +192,16 @@ def get_manuscript_detail(
         total_results_peer=row[2],
         has_peer_reviews=has_peer_reviews,
         total_comparisons=row[4],
-        agree_count=row[5] if has_peer_reviews else None,
-        partial_count=row[6] if has_peer_reviews else None,
-        disagree_count=row[7] if has_peer_reviews else None,
-        disjoint_count=row[8] if has_peer_reviews else None
+        llm_supported_count=row[5],
+        llm_unsupported_count=row[6],
+        llm_uncertain_count=row[7],
+        peer_supported_count=row[8] if has_peer_reviews else None,
+        peer_unsupported_count=row[9] if has_peer_reviews else None,
+        peer_uncertain_count=row[10] if has_peer_reviews else None,
+        agree_count=row[11] if has_peer_reviews else None,
+        partial_count=row[12] if has_peer_reviews else None,
+        disagree_count=row[13] if has_peer_reviews else None,
+        disjoint_count=row[14] if has_peer_reviews else None
     )
 
     # Get all claims
