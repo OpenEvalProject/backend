@@ -150,20 +150,20 @@ def get_manuscript_detail(
                 JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
                 WHERE rl2.manuscript_id = m.id) as total_comparisons,
                (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Supported') as llm_supported_count,
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'SUPPORTED') as llm_supported_count,
                (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Unsupported') as llm_unsupported_count,
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'UNSUPPORTED') as llm_unsupported_count,
                (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'Uncertain') as llm_uncertain_count,
+                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'UNCERTAIN') as llm_uncertain_count,
                (SELECT COUNT(*) FROM result_peer rp2
                 JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Supported') as peer_supported_count,
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'SUPPORTED') as peer_supported_count,
                (SELECT COUNT(*) FROM result_peer rp2
                 JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Unsupported') as peer_unsupported_count,
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'UNSUPPORTED') as peer_unsupported_count,
                (SELECT COUNT(*) FROM result_peer rp2
                 JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'Uncertain') as peer_uncertain_count,
+                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'UNCERTAIN') as peer_uncertain_count,
                (SELECT COUNT(*) FROM comparison cmp
                 JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
                 WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
