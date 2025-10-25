@@ -34,35 +34,31 @@ async def get_aggregate_statistics():
         with get_db() as conn:
             cursor = conn.cursor()
 
-            # Count manuscripts
-            cursor.execute("SELECT COUNT(*) FROM manuscript")
+            # Count submissions (manuscripts)
+            cursor.execute("SELECT COUNT(*) FROM submission")
             total_manuscripts = cursor.fetchone()[0]
 
             # Count claims
             cursor.execute("SELECT COUNT(*) FROM claim")
             total_claims = cursor.fetchone()[0]
 
-            # Count LLM results
-            cursor.execute("SELECT COUNT(*) FROM result_llm")
+            # Count LLM results (from unified result table)
+            cursor.execute("SELECT COUNT(*) FROM result WHERE result_category = 'llm'")
             total_llm_results = cursor.fetchone()[0]
 
-            # Count peer results
-            cursor.execute("SELECT COUNT(*) FROM result_peer")
+            # Count peer results (from unified result table)
+            cursor.execute("SELECT COUNT(*) FROM result WHERE result_category = 'peer'")
             total_peer_results = cursor.fetchone()[0]
 
             # Count comparisons
             cursor.execute("SELECT COUNT(*) FROM comparison")
             total_comparisons = cursor.fetchone()[0]
 
-            # Count manuscripts with peer reviews (manuscripts that have comparisons)
+            # Count submissions with peer reviews (have peer_review content)
             cursor.execute("""
-                SELECT COUNT(DISTINCT m.id)
-                FROM manuscript m
-                WHERE EXISTS (
-                    SELECT 1 FROM comparison cmp
-                    JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-                    WHERE rl.manuscript_id = m.id
-                )
+                SELECT COUNT(DISTINCT submission_id)
+                FROM content
+                WHERE content_type = 'peer_review'
             """)
             manuscripts_with_peer_reviews = cursor.fetchone()[0]
 

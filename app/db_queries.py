@@ -27,7 +27,7 @@ def get_manuscripts_list(
     offset: int = 0
 ) -> tuple[List[ManuscriptSummary], int]:
     """
-    Get list of all manuscripts with summary information.
+    Get list of all submissions (manuscripts) with summary information.
 
     Args:
         conn: Database connection
@@ -39,41 +39,51 @@ def get_manuscripts_list(
     """
     cursor = conn.cursor()
 
-    # Count total manuscripts
-    cursor.execute("SELECT COUNT(*) FROM manuscript")
+    # Count total submissions
+    cursor.execute("SELECT COUNT(*) FROM submission")
     total_count = cursor.fetchone()[0]
 
     # Build query using scalar subqueries for better performance
-    # This avoids cartesian products from multiple JOINs
+    # NEW: Works with submission/content/unified result tables
     query = """
         SELECT
-            m.id,
-            m.title,
-            m.pub_date,
-            m.created_at,
-            (SELECT COUNT(*) FROM claim WHERE manuscript_id = m.id) as total_claims,
-            (SELECT COUNT(*) FROM result_llm WHERE manuscript_id = m.id) as total_results_llm,
-            (SELECT COUNT(rp.id) FROM result_peer rp
-             JOIN peer p ON rp.peer_id = p.id
-             WHERE p.manuscript_id = m.id) as total_results_peer,
-            (SELECT COUNT(*) > 0 FROM peer WHERE manuscript_id = m.id) as has_peer_reviews,
-            (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-             WHERE rl.manuscript_id = m.id) as total_comparisons,
-            (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
-            (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'partial') as partial_count,
-            (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count,
-            (SELECT COUNT(cmp.id) FROM comparison cmp
-             JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-             WHERE rl.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count
-        FROM manuscript m
-        ORDER BY m.created_at DESC
+            s.id,
+            s.manuscript_title,
+            s.manuscript_pub_date,
+            s.created_at,
+            (SELECT COUNT(DISTINCT c.id) FROM claim c
+             JOIN content ct ON c.content_id = ct.id
+             WHERE ct.submission_id = s.id) as total_claims,
+            (SELECT COUNT(*) FROM result r
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND r.result_category = 'llm') as total_results_llm,
+            (SELECT COUNT(*) FROM result r
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND r.result_category = 'peer') as total_results_peer,
+            (SELECT COUNT(*) > 0 FROM content
+             WHERE submission_id = s.id AND content_type = 'peer_review') as has_peer_reviews,
+            (SELECT COUNT(*) FROM comparison cmp
+             JOIN result r ON cmp.openeval_result_id = r.id
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id) as total_comparisons,
+            (SELECT COUNT(*) FROM comparison cmp
+             JOIN result r ON cmp.openeval_result_id = r.id
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'agree') as agree_count,
+            (SELECT COUNT(*) FROM comparison cmp
+             JOIN result r ON cmp.openeval_result_id = r.id
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'partial') as partial_count,
+            (SELECT COUNT(*) FROM comparison cmp
+             JOIN result r ON cmp.openeval_result_id = r.id
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disagree') as disagree_count,
+            (SELECT COUNT(*) FROM comparison cmp
+             JOIN result r ON cmp.openeval_result_id = r.id
+             JOIN content ct ON r.content_id = ct.id
+             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disjoint') as disjoint_count
+        FROM submission s
+        ORDER BY s.created_at DESC
     """
 
     if limit:
@@ -109,21 +119,21 @@ def get_manuscript_detail(
     manuscript_id: str
 ) -> Optional[ManuscriptDetail]:
     """
-    Get complete details for a single manuscript.
+    Get complete details for a single submission (manuscript).
 
     Args:
         conn: Database connection
-        manuscript_id: Manuscript ID
+        manuscript_id: Submission ID
 
     Returns:
         ManuscriptDetail or None if not found
     """
     cursor = conn.cursor()
 
-    # Get manuscript metadata
+    # Get submission metadata
     cursor.execute("""
-        SELECT id, doi, title, abstract, pub_date, created_at
-        FROM manuscript
+        SELECT id, manuscript_doi, manuscript_title, manuscript_pub_date, created_at
+        FROM submission
         WHERE id = ?
     """, (manuscript_id,))
 
@@ -135,53 +145,64 @@ def get_manuscript_detail(
         id=row[0],
         doi=row[1],
         title=row[2],
-        abstract=row[3],
-        pub_date=row[4],
-        created_at=row[5]
+        pub_date=row[3],
+        created_at=row[4]
     )
 
-    # Get summary stats with status and agreement counts
+    # Get summary stats with status and agreement counts (NEW: submission/content model)
     cursor.execute("""
-        SELECT COUNT(DISTINCT c.id) as total_claims,
-               COUNT(DISTINCT rl.id) as total_results_llm,
-               COUNT(DISTINCT rp.id) as total_results_peer,
-               COUNT(DISTINCT p.id) > 0 as has_peer_reviews,
+        SELECT
+               (SELECT COUNT(DISTINCT c.id) FROM claim c
+                JOIN content ct ON c.content_id = ct.id
+                WHERE ct.submission_id = s.id) as total_claims,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'llm') as total_results_llm,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'peer') as total_results_peer,
+               (SELECT COUNT(*) > 0 FROM content
+                WHERE submission_id = s.id AND content_type = 'peer_review') as has_peer_reviews,
                (SELECT COUNT(*) FROM comparison cmp
-                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
-                WHERE rl2.manuscript_id = m.id) as total_comparisons,
-               (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'SUPPORTED') as llm_supported_count,
-               (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'UNSUPPORTED') as llm_unsupported_count,
-               (SELECT COUNT(*) FROM result_llm rl2
-                WHERE rl2.manuscript_id = m.id AND rl2.result_status = 'UNCERTAIN') as llm_uncertain_count,
-               (SELECT COUNT(*) FROM result_peer rp2
-                JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'SUPPORTED') as peer_supported_count,
-               (SELECT COUNT(*) FROM result_peer rp2
-                JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'UNSUPPORTED') as peer_unsupported_count,
-               (SELECT COUNT(*) FROM result_peer rp2
-                JOIN peer p2 ON rp2.peer_id = p2.id
-                WHERE p2.manuscript_id = m.id AND rp2.result_status = 'UNCERTAIN') as peer_uncertain_count,
+                JOIN result r ON cmp.openeval_result_id = r.id
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id) as total_comparisons,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'llm' AND r.result_status = 'SUPPORTED') as llm_supported_count,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'llm' AND r.result_status = 'UNSUPPORTED') as llm_unsupported_count,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'llm' AND r.result_status = 'UNCERTAIN') as llm_uncertain_count,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'peer' AND r.result_status = 'SUPPORTED') as peer_supported_count,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'peer' AND r.result_status = 'UNSUPPORTED') as peer_unsupported_count,
+               (SELECT COUNT(*) FROM result r
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND r.result_category = 'peer' AND r.result_status = 'UNCERTAIN') as peer_uncertain_count,
                (SELECT COUNT(*) FROM comparison cmp
-                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
-                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'agree') as agree_count,
+                JOIN result r ON cmp.openeval_result_id = r.id
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND cmp.agreement_status = 'agree') as agree_count,
                (SELECT COUNT(*) FROM comparison cmp
-                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
-                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'partial') as partial_count,
+                JOIN result r ON cmp.openeval_result_id = r.id
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND cmp.agreement_status = 'partial') as partial_count,
                (SELECT COUNT(*) FROM comparison cmp
-                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
-                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'disagree') as disagree_count,
+                JOIN result r ON cmp.openeval_result_id = r.id
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disagree') as disagree_count,
                (SELECT COUNT(*) FROM comparison cmp
-                JOIN result_llm rl2 ON cmp.openeval_result_id = rl2.id
-                WHERE rl2.manuscript_id = m.id AND cmp.agreement_status = 'disjoint') as disjoint_count
-        FROM manuscript m
-        LEFT JOIN claim c ON m.id = c.manuscript_id
-        LEFT JOIN result_llm rl ON m.id = rl.manuscript_id
-        LEFT JOIN peer p ON m.id = p.manuscript_id
-        LEFT JOIN result_peer rp ON p.id = rp.peer_id
-        WHERE m.id = ?
+                JOIN result r ON cmp.openeval_result_id = r.id
+                JOIN content ct ON r.content_id = ct.id
+                WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disjoint') as disjoint_count
+        FROM submission s
+        WHERE s.id = ?
     """, (manuscript_id,))
 
     row = cursor.fetchone()
@@ -230,20 +251,34 @@ def get_claims_for_manuscript(
     conn: sqlite3.Connection,
     manuscript_id: str
 ) -> List[ClaimFull]:
-    """Get all claims for a manuscript."""
+    """Get all claims for a submission (manuscript)."""
     cursor = conn.cursor()
 
+    # NEW: Join through content table to get claims for submission
     cursor.execute("""
-        SELECT id, claim_id, claim, claim_type, source_text, evidence_type, evidence_reasoning
-        FROM claim
-        WHERE manuscript_id = ?
-        ORDER BY id
+        SELECT c.id, c.claim_id, c.claim, c.claim_type, c.source, c.source_type, c.evidence, c.evidence_type
+        FROM claim c
+        JOIN content ct ON c.content_id = ct.id
+        WHERE ct.submission_id = ?
+        ORDER BY c.id
     """, (manuscript_id,))
 
     claims = []
     for row in cursor.fetchall():
-        # evidence_type is double-JSON encoded, so we need to parse it twice
-        evidence_type_raw = row[5]
+        # Parse source_type JSON array
+        source_type_raw = row[5]
+        if source_type_raw:
+            source_type_parsed = json.loads(source_type_raw)
+            # If still a string, parse again
+            if isinstance(source_type_parsed, str):
+                source_type = json.loads(source_type_parsed)
+            else:
+                source_type = source_type_parsed
+        else:
+            source_type = []
+
+        # Parse evidence_type JSON array
+        evidence_type_raw = row[7]
         if evidence_type_raw:
             evidence_type_parsed = json.loads(evidence_type_raw)
             # If still a string, parse again
@@ -259,9 +294,10 @@ def get_claims_for_manuscript(
             claim_id=row[1],
             claim=row[2],
             claim_type=row[3],
-            source_text=row[4],
-            evidence_type=evidence_type,
-            evidence_reasoning=row[6]
+            source=row[4],
+            source_type=source_type,
+            evidence=row[6],
+            evidence_type=evidence_type
         ))
 
     return claims
@@ -271,38 +307,44 @@ def get_results_llm_for_manuscript(
     conn: sqlite3.Connection,
     manuscript_id: str
 ) -> List[ResultLLM]:
-    """Get all LLM results for a manuscript with linked claim IDs."""
+    """Get all LLM results for a submission (manuscript) with linked claim IDs."""
     cursor = conn.cursor()
 
+    # NEW: Query unified result table filtering by result_category='llm'
     cursor.execute("""
-        SELECT id, result, reviewer_id, reviewer_name, result_status, result_reasoning
-        FROM result_llm
-        WHERE manuscript_id = ?
-        ORDER BY id
+        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning
+        FROM result r
+        JOIN content ct ON r.content_id = ct.id
+        WHERE ct.submission_id = ? AND r.result_category = 'llm'
+        ORDER BY r.id
     """, (manuscript_id,))
 
     results = []
     for row in cursor.fetchall():
-        result_id = row[0]
+        result_uuid = row[0]
+        result_id = row[1]
 
-        # Get claim IDs for this result
+        # Get claim IDs for this result (NEW: unified claim_result table)
         cursor.execute("""
-            SELECT claim_id
-            FROM claim_result_llm
-            WHERE result_llm_id = ?
-            ORDER BY claim_id
-        """, (result_id,))
+            SELECT c.claim_id
+            FROM claim_result cr
+            JOIN claim c ON cr.claim_id = c.id
+            WHERE cr.result_id = ?
+            ORDER BY c.claim_id
+        """, (result_uuid,))
 
         claim_ids = [r[0] for r in cursor.fetchall()]
 
         results.append(ResultLLM(
-            id=result_id,
+            id=result_uuid,
+            result_id=result_id,
+            result_category='llm',
             claim_ids=claim_ids,
-            result=row[1],
-            reviewer_id=row[2],
-            reviewer_name=row[3],
-            result_status=row[4],
-            result_reasoning=row[5]
+            result=row[2],
+            reviewer_id=row[3],
+            reviewer_name=row[4],
+            result_status=row[5],
+            result_reasoning=row[6]
         ))
 
     return results
@@ -312,49 +354,44 @@ def get_results_peer_for_manuscript(
     conn: sqlite3.Connection,
     manuscript_id: str
 ) -> List[ResultPeer]:
-    """Get all peer results for a manuscript with linked claim IDs."""
+    """Get all peer results for a submission (manuscript) with linked claim IDs."""
     cursor = conn.cursor()
 
-    # First get peer_id for this manuscript
+    # NEW: Query unified result table filtering by result_category='peer'
     cursor.execute("""
-        SELECT id FROM peer WHERE manuscript_id = ?
+        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning
+        FROM result r
+        JOIN content ct ON r.content_id = ct.id
+        WHERE ct.submission_id = ? AND r.result_category = 'peer'
+        ORDER BY r.id
     """, (manuscript_id,))
-
-    peer_row = cursor.fetchone()
-    if not peer_row:
-        return []
-
-    peer_id = peer_row[0]
-
-    cursor.execute("""
-        SELECT id, result, reviewer_id, reviewer_name, result_status, result_reasoning
-        FROM result_peer
-        WHERE peer_id = ?
-        ORDER BY id
-    """, (peer_id,))
 
     results = []
     for row in cursor.fetchall():
-        result_id = row[0]
+        result_uuid = row[0]
+        result_id = row[1]
 
-        # Get claim IDs for this result
+        # Get claim IDs for this result (NEW: unified claim_result table)
         cursor.execute("""
-            SELECT claim_id
-            FROM claim_result_peer
-            WHERE result_peer_id = ?
-            ORDER BY claim_id
-        """, (result_id,))
+            SELECT c.claim_id
+            FROM claim_result cr
+            JOIN claim c ON cr.claim_id = c.id
+            WHERE cr.result_id = ?
+            ORDER BY c.claim_id
+        """, (result_uuid,))
 
         claim_ids = [r[0] for r in cursor.fetchall()]
 
         results.append(ResultPeer(
-            id=result_id,
+            id=result_uuid,
+            result_id=result_id,
+            result_category='peer',
             claim_ids=claim_ids,
-            result=row[1],
-            reviewer_id=row[2],
-            reviewer_name=row[3],
-            result_status=row[4],
-            result_reasoning=row[5]
+            result=row[2],
+            reviewer_id=row[3],
+            reviewer_name=row[4],
+            result_status=row[5],
+            result_reasoning=row[6]
         ))
 
     return results
@@ -364,9 +401,10 @@ def get_comparisons_for_manuscript(
     conn: sqlite3.Connection,
     manuscript_id: str
 ) -> List[ComparisonFull]:
-    """Get all comparison data for a manuscript."""
+    """Get all comparison data for a submission (manuscript)."""
     cursor = conn.cursor()
 
+    # NEW: Join through unified result table to get comparisons for submission
     cursor.execute("""
         SELECT
             cmp.id,
@@ -379,14 +417,14 @@ def get_comparisons_for_manuscript(
             cmp.n_openeval,
             cmp.n_peer,
             cmp.n_itx,
-            rl.result_reasoning as openeval_reasoning,
-            rp.result_reasoning as peer_reasoning
+            cmp.openeval_reasoning,
+            cmp.peer_reasoning,
+            cmp.openeval_result_type,
+            cmp.peer_result_type
         FROM comparison cmp
-        LEFT JOIN result_llm rl ON cmp.openeval_result_id = rl.id
-        LEFT JOIN result_peer rp ON cmp.peer_result_id = rp.id
-        WHERE cmp.openeval_result_id IN (
-            SELECT id FROM result_llm WHERE manuscript_id = ?
-        )
+        JOIN result r ON cmp.openeval_result_id = r.id
+        JOIN content ct ON r.content_id = ct.id
+        WHERE ct.submission_id = ?
         ORDER BY cmp.id
     """, (manuscript_id,))
 
@@ -404,7 +442,9 @@ def get_comparisons_for_manuscript(
             n_peer=row[8],
             n_itx=row[9],
             openeval_reasoning=row[10],
-            peer_reasoning=row[11]
+            peer_reasoning=row[11],
+            openeval_result_type=row[12],
+            peer_result_type=row[13]
         ))
 
     return comparisons

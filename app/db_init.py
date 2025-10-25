@@ -97,10 +97,12 @@ def init_database(drop_tables: bool = False):
                 'claims_v3',
                 'results_v3',
                 'results_concordance',
-                'claim_result',  # Old junction table
-                'content',  # Old content table
-                'result',  # Old result table
-                'submissions'  # Old submissions table
+                'manuscript',  # OLD table (replaced by submission)
+                'peer',  # OLD table (replaced by content with type='peer_review')
+                'result_llm',  # OLD table (replaced by unified result table)
+                'result_peer',  # OLD table (replaced by unified result table)
+                'claim_result_llm',  # OLD junction table (replaced by claim_result)
+                'claim_result_peer'  # OLD junction table (replaced by claim_result)
             ]
 
             cursor.execute("PRAGMA foreign_keys = OFF")

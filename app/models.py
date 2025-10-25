@@ -49,14 +49,17 @@ class ClaimFull(BaseModel):
     claim_id: Optional[str] = None  # Simple ID like "C1", "C2"
     claim: str
     claim_type: str  # EXPLICIT or IMPLICIT
-    source_text: str
+    source: str  # Changed from source_text
+    source_type: List[str]  # JSON array: ["TEXT"], ["FIGURE"], etc.
+    evidence: str  # Changed from evidence_reasoning
     evidence_type: List[str]  # JSON array: ["DATA", "CITATION", ...]
-    evidence_reasoning: str
 
 
-class ResultLLM(BaseModel):
-    """LLM evaluation result"""
-    id: str  # e.g., "R1", "R2"
+class ResultFull(BaseModel):
+    """Unified result model for both LLM and peer evaluations"""
+    id: str  # UUID
+    result_id: Optional[str] = None  # Simple ID like "R1", "R2"
+    result_category: str  # 'llm' or 'peer'
     claim_ids: List[str]  # List of claim IDs this result evaluates
     result: str  # Description of the scientific finding (2-3 sentences)
     reviewer_id: Optional[str] = None
@@ -65,15 +68,9 @@ class ResultLLM(BaseModel):
     result_reasoning: str
 
 
-class ResultPeer(BaseModel):
-    """Peer evaluation result"""
-    id: str  # e.g., "R1", "R2"
-    claim_ids: List[str]  # List of claim IDs this result evaluates
-    result: str  # Description of the scientific finding (2-3 sentences)
-    reviewer_id: Optional[str] = None
-    reviewer_name: Optional[str] = None
-    result_status: str  # SUPPORTED, UNSUPPORTED, UNCERTAIN
-    result_reasoning: str
+# Backwards compatibility aliases
+ResultLLM = ResultFull
+ResultPeer = ResultFull
 
 
 class ComparisonFull(BaseModel):
@@ -90,20 +87,22 @@ class ComparisonFull(BaseModel):
     n_itx: Optional[int] = None
     openeval_reasoning: Optional[str] = None
     peer_reasoning: Optional[str] = None
+    # NEW: Result type fields for displaying claim categories
+    openeval_result_type: Optional[str] = None  # MAJOR, MINOR, DATA, METHOD, etc.
+    peer_result_type: Optional[str] = None  # MAJOR, MINOR, DATA, METHOD, etc.
 
 
 class ManuscriptMetadata(BaseModel):
-    """Manuscript metadata"""
+    """Manuscript metadata (from submission table)"""
     id: str
-    doi: Optional[str] = None
-    title: Optional[str] = None
-    abstract: Optional[str] = None
-    pub_date: Optional[str] = None
+    doi: Optional[str] = None  # manuscript_doi field
+    title: Optional[str] = None  # manuscript_title field
+    pub_date: Optional[str] = None  # manuscript_pub_date field
     created_at: str
 
 
 class ManuscriptSummary(BaseModel):
-    """Manuscript summary for list view"""
+    """Manuscript summary for list view (from submission table)"""
     id: str
     title: Optional[str] = None
     pub_date: Optional[str] = None
