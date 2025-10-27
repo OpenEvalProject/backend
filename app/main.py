@@ -9,6 +9,7 @@ from app.config import settings
 from app.db_init import init_database
 from app.models import HealthResponse
 from app.routers import auth, manuscripts, search
+from app.routers.search import papers_router
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +50,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(manuscripts.router)
 app.include_router(search.router)
+app.include_router(papers_router)
 
 
 @app.get("/health", response_model=HealthResponse)

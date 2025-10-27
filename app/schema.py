@@ -22,6 +22,40 @@ CREATE TABLE IF NOT EXISTS submission (
     updated_at TIMESTAMP NOT NULL
 );
 
+-- Author table (stores manuscript authors)
+CREATE TABLE IF NOT EXISTS author (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submission_id TEXT NOT NULL,
+    given_names TEXT NOT NULL,
+    surname TEXT NOT NULL,
+    orcid TEXT,
+    corresponding BOOLEAN DEFAULT 0,
+    position INTEGER NOT NULL,
+    FOREIGN KEY (submission_id) REFERENCES submission(id) ON DELETE CASCADE
+);
+
+-- Affiliation table (stores institutional affiliations)
+CREATE TABLE IF NOT EXISTS affiliation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submission_id TEXT NOT NULL,
+    affiliation_id TEXT NOT NULL,
+    institution TEXT,
+    department TEXT,
+    city TEXT,
+    country TEXT,
+    FOREIGN KEY (submission_id) REFERENCES submission(id) ON DELETE CASCADE,
+    UNIQUE(submission_id, affiliation_id)
+);
+
+-- Junction table: authors to affiliations (many-to-many)
+CREATE TABLE IF NOT EXISTS author_affiliation (
+    author_id INTEGER NOT NULL,
+    affiliation_id INTEGER NOT NULL,
+    PRIMARY KEY (author_id, affiliation_id),
+    FOREIGN KEY (author_id) REFERENCES author(id) ON DELETE CASCADE,
+    FOREIGN KEY (affiliation_id) REFERENCES affiliation(id) ON DELETE CASCADE
+);
+
 -- Content table (stores manuscript text and peer reviews)
 CREATE TABLE IF NOT EXISTS content (
     id TEXT PRIMARY KEY,
@@ -123,6 +157,12 @@ CREATE INDEX IF NOT EXISTS idx_comparison_openeval_result ON comparison(openeval
 CREATE INDEX IF NOT EXISTS idx_comparison_peer_result ON comparison(peer_result_id);
 CREATE INDEX IF NOT EXISTS idx_comparison_prompt ON comparison(prompt_id);
 CREATE INDEX IF NOT EXISTS idx_prompt_type ON prompt(prompt_type);
+CREATE INDEX IF NOT EXISTS idx_author_submission ON author(submission_id);
+CREATE INDEX IF NOT EXISTS idx_author_surname ON author(surname);
+CREATE INDEX IF NOT EXISTS idx_author_orcid ON author(orcid);
+CREATE INDEX IF NOT EXISTS idx_affiliation_submission ON affiliation(submission_id);
+CREATE INDEX IF NOT EXISTS idx_affiliation_institution ON affiliation(institution);
+CREATE INDEX IF NOT EXISTS idx_affiliation_country ON affiliation(country);
 """
 
 # SQL to preserve auth tables (users and sessions)

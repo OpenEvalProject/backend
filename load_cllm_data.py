@@ -75,7 +75,55 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         ))
 
         # ====================================================================
-        # 2. INSERT CONTENT (manuscript and peer_review)
+        # 2. INSERT AUTHORS AND AFFILIATIONS
+        # ====================================================================
+        # Maps affiliation_id (from JSON) to database affiliation.id
+        affiliation_id_map: Dict[str, int] = {}
+
+        # Insert affiliations first (from metadata)
+        for aff in metadata.get('affiliations', []):
+            cursor.execute("""
+                INSERT INTO affiliation (submission_id, affiliation_id, institution, department, city, country)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                submission_id,
+                aff['id'],
+                aff.get('institution'),
+                aff.get('department'),
+                aff.get('city'),
+                aff.get('country')
+            ))
+            # Map the JSON affiliation_id to database auto-increment id
+            affiliation_id_map[aff['id']] = cursor.lastrowid
+
+        # Insert authors (from metadata)
+        for author in metadata.get('authors', []):
+            cursor.execute("""
+                INSERT INTO author (submission_id, given_names, surname, orcid, corresponding, position)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                submission_id,
+                author['given_names'],
+                author['surname'],
+                author.get('orcid'),
+                1 if author.get('corresponding') else 0,
+                author['position']
+            ))
+            author_db_id = cursor.lastrowid
+
+            # Create author-affiliation links
+            for aff_id in author.get('affiliation_ids', []):
+                if aff_id in affiliation_id_map:
+                    cursor.execute("""
+                        INSERT INTO author_affiliation (author_id, affiliation_id)
+                        VALUES (?, ?)
+                    """, (
+                        author_db_id,
+                        affiliation_id_map[aff_id]
+                    ))
+
+        # ====================================================================
+        # 3. INSERT CONTENT (manuscript and peer_review)
         # ====================================================================
         content_id_map = {}  # Map old content IDs to new ones
         for content in data['content']:
@@ -92,7 +140,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             content_id_map[content['id']] = content['id']
 
         # ====================================================================
-        # 3. INSERT PROMPTS
+        # 4. INSERT PROMPTS
         # ====================================================================
         for prompt in data['prompts']:
             cursor.execute("""
@@ -107,7 +155,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 4. INSERT CLAIMS
+        # 5. INSERT CLAIMS
         # ====================================================================
         for claim in data['claims']:
             # Convert source_text to source, evidence_reasoning to evidence
@@ -130,7 +178,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 5. INSERT RESULTS (unified table)
+        # 6. INSERT RESULTS (unified table)
         # ====================================================================
         for result in data['results']:
             cursor.execute("""
@@ -153,7 +201,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 6. INSERT CLAIM_RESULT JUNCTIONS
+        # 7. INSERT CLAIM_RESULT JUNCTIONS
         # ====================================================================
         for claim_result in data['claim_results']:
             cursor.execute("""
@@ -165,7 +213,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 7. INSERT COMPARISONS
+        # 8. INSERT COMPARISONS
         # ====================================================================
         for comparison in data['comparisons']:
             cursor.execute("""
@@ -197,6 +245,8 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
 
         print(f"✅ Successfully loaded submission {submission_id}")
         print(f"   Title: {title}")
+        print(f"   Authors: {len(metadata.get('authors', []))}")
+        print(f"   Affiliations: {len(metadata.get('affiliations', []))}")
         print(f"   Claims: {len(data['claims'])}")
         print(f"   Results: {len(data['results'])}")
         print(f"   Comparisons: {len(data['comparisons'])}")
