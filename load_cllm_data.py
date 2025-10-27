@@ -43,10 +43,11 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         submission = data['submission']
         submission_id = submission['id']
 
-        # Use metadata file for title, DOI, and pub_date if available
+        # Use metadata file for title, DOI, pub_date, and abstract if available
         title = metadata.get('title') or submission.get('manuscript_title')
         doi = metadata.get('doi') or submission.get('manuscript_doi')
         pub_date = metadata.get('pub_date')
+        abstract = metadata.get('abstract')
 
         # If title still not found, extract from manuscript content
         if not title:
@@ -59,14 +60,15 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         # 1. INSERT SUBMISSION
         # ====================================================================
         cursor.execute("""
-            INSERT INTO submission (id, user_id, manuscript_title, manuscript_doi, manuscript_pub_date, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO submission (id, user_id, manuscript_title, manuscript_doi, manuscript_pub_date, manuscript_abstract, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             submission_id,
             submission.get('user_id'),
             title,
             doi,
             pub_date,
+            abstract,
             submission['status'],
             submission['created_at'],
             submission['updated_at']

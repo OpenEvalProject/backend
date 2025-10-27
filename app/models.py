@@ -98,6 +98,7 @@ class ManuscriptMetadata(BaseModel):
     doi: Optional[str] = None  # manuscript_doi field
     title: Optional[str] = None  # manuscript_title field
     pub_date: Optional[str] = None  # manuscript_pub_date field
+    abstract: Optional[str] = None  # manuscript_abstract field
     created_at: str
 
 

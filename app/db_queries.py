@@ -132,7 +132,7 @@ def get_manuscript_detail(
 
     # Get submission metadata
     cursor.execute("""
-        SELECT id, manuscript_doi, manuscript_title, manuscript_pub_date, created_at
+        SELECT id, manuscript_doi, manuscript_title, manuscript_pub_date, manuscript_abstract, created_at
         FROM submission
         WHERE id = ?
     """, (manuscript_id,))
@@ -146,7 +146,8 @@ def get_manuscript_detail(
         doi=row[1],
         title=row[2],
         pub_date=row[3],
-        created_at=row[4]
+        abstract=row[4],
+        created_at=row[5]
     )
 
     # Get summary stats with status and agreement counts (NEW: submission/content model)

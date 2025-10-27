@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS submission (
     manuscript_title TEXT,
     manuscript_doi TEXT,
     manuscript_pub_date TEXT,
+    manuscript_abstract TEXT,
     status TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
