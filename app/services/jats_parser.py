@@ -1,17 +1,17 @@
 """
-JATS XML parser for bioRxiv articles.
+JATS XML parser for scientific articles.
 
 Parses JATS (Journal Article Tag Suite) XML format and converts to markdown,
-including author affiliations and ORCID IDs.
+including author affiliations with ROR links, inline citation links,
+figure reference links, and ORCID IDs.
 
-This module now uses the jxp library for parsing JATS XML files.
+This module uses the jats library for parsing JATS XML files.
 """
 
 from pathlib import Path
 from typing import Optional
 
-from jxp.converter import convert_to_markdown as jxp_convert_to_markdown
-from jxp.parser import parse_jats_xml as jxp_parse_jats_xml
+from jats import convert_to_markdown, parse_jats_xml as jats_parse_jats_xml
 
 
 def parse_jats_xml(xml_path: str, manifest_path: Optional[str] = None) -> str:
@@ -23,17 +23,21 @@ def parse_jats_xml(xml_path: str, manifest_path: Optional[str] = None) -> str:
         manifest_path: Optional path to manifest.xml for resolving figure paths.
 
     Returns:
-        Markdown formatted text
+        Markdown formatted text with:
+        - ROR links for affiliations
+        - Inline citation links to DOIs
+        - Figure reference links to image URLs
+        - ORCID links for authors
     """
     xml_path_obj = Path(xml_path)
     manifest_path_obj = Path(manifest_path) if manifest_path else None
-    
-    # Parse using jxp
-    article = jxp_parse_jats_xml(xml_path_obj, manifest_path=manifest_path_obj)
-    
+
+    # Parse using jats library
+    article = jats_parse_jats_xml(xml_path_obj, manifest_path=manifest_path_obj)
+
     # Convert to markdown
-    markdown = jxp_convert_to_markdown(article)
-    
+    markdown = convert_to_markdown(article)
+
     return markdown
 
 

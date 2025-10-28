@@ -5,7 +5,6 @@ Endpoints for listing and viewing manuscripts with their claims, results, and co
 """
 
 import logging
-import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -210,23 +209,11 @@ async def get_manuscript_markdown(manuscript_id: str):
                     detail=f"JATS XML file not found at: {xml_rel_path}"
                 )
 
-            # Call jats convert command
+            # Convert JATS XML to markdown using the jats library
             try:
-                result = subprocess.run(
-                    ["jats", "convert", str(xml_full_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=30  # 30 second timeout
-                )
+                from app.services.jats_parser import parse_jats_xml
 
-                if result.returncode != 0:
-                    logger.error(f"JATS conversion failed: {result.stderr}")
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to convert JATS XML to markdown: {result.stderr}"
-                    )
-
-                markdown_content = result.stdout
+                markdown_content = parse_jats_xml(str(xml_full_path))
 
                 return {
                     "markdown": markdown_content,
@@ -234,17 +221,11 @@ async def get_manuscript_markdown(manuscript_id: str):
                     "version": version
                 }
 
-            except subprocess.TimeoutExpired:
-                logger.error(f"JATS conversion timeout for {manuscript_id}")
+            except Exception as conversion_error:
+                logger.error(f"JATS conversion failed: {conversion_error}")
                 raise HTTPException(
                     status_code=500,
-                    detail="JATS conversion took too long (timeout after 30s)"
-                )
-            except FileNotFoundError:
-                logger.error("jats command not found")
-                raise HTTPException(
-                    status_code=500,
-                    detail="JATS converter not available. Please install jats CLI tool."
+                    detail=f"Failed to convert JATS XML to markdown: {str(conversion_error)}"
                 )
 
     except HTTPException:
