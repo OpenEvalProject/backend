@@ -130,11 +130,18 @@ def get_manuscript_detail(
     """
     cursor = conn.cursor()
 
-    # Get submission metadata
+    # Get submission metadata with JATS availability check
     cursor.execute("""
-        SELECT id, manuscript_doi, manuscript_title, manuscript_pub_date, manuscript_abstract, created_at
-        FROM submission
-        WHERE id = ?
+        SELECT
+            s.id,
+            s.manuscript_doi,
+            s.manuscript_title,
+            s.manuscript_pub_date,
+            s.manuscript_abstract,
+            s.created_at,
+            (SELECT COUNT(*) > 0 FROM jats WHERE submission_id = s.id) as has_jats
+        FROM submission s
+        WHERE s.id = ?
     """, (manuscript_id,))
 
     row = cursor.fetchone()
@@ -147,7 +154,8 @@ def get_manuscript_detail(
         title=row[2],
         pub_date=row[3],
         abstract=row[4],
-        created_at=row[5]
+        created_at=row[5],
+        has_jats=bool(row[6])
     )
 
     # Get summary stats with status and agreement counts (NEW: submission/content model)

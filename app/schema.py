@@ -56,6 +56,16 @@ CREATE TABLE IF NOT EXISTS author_affiliation (
     FOREIGN KEY (affiliation_id) REFERENCES affiliation(id) ON DELETE CASCADE
 );
 
+-- JATS table (stores paths to JATS XML files for manuscripts)
+CREATE TABLE IF NOT EXISTS jats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submission_id TEXT NOT NULL UNIQUE,
+    xml_rel_path TEXT NOT NULL,
+    version TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (submission_id) REFERENCES submission(id) ON DELETE CASCADE
+);
+
 -- Content table (stores manuscript text and peer reviews)
 CREATE TABLE IF NOT EXISTS content (
     id TEXT PRIMARY KEY,
@@ -163,6 +173,7 @@ CREATE INDEX IF NOT EXISTS idx_author_orcid ON author(orcid);
 CREATE INDEX IF NOT EXISTS idx_affiliation_submission ON affiliation(submission_id);
 CREATE INDEX IF NOT EXISTS idx_affiliation_institution ON affiliation(institution);
 CREATE INDEX IF NOT EXISTS idx_affiliation_country ON affiliation(country);
+CREATE INDEX IF NOT EXISTS idx_jats_submission ON jats(submission_id);
 """
 
 # SQL to preserve auth tables (users and sessions)

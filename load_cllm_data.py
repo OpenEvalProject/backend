@@ -6,6 +6,7 @@ and unified result table with result_category field.
 """
 
 import json
+import os
 import sqlite3
 import sys
 from pathlib import Path
@@ -123,7 +124,41 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
                     ))
 
         # ====================================================================
-        # 3. INSERT CONTENT (manuscript and peer_review)
+        # 3. INSERT JATS FILE PATH
+        # ====================================================================
+        # Look for JATS XML file in the parent directory (manuscript directory)
+        # json_path_obj.parent is the version directory (e.g., v1/)
+        # Go up one more level to get the manuscript directory
+        manuscript_dir = json_path_obj.resolve().parent.parent
+        manuscript_id = manuscript_dir.name  # e.g., "elife-00003"
+        version_dir_name = json_path_obj.resolve().parent.name  # e.g., "v1"
+
+        # Pattern: {manuscript_id}-{version}.xml (e.g., elife-00003-v1.xml)
+        jats_files = list(manuscript_dir.glob(f"{manuscript_id}-{version_dir_name}.xml"))
+
+        if jats_files:
+            # Use the first match (should only be one)
+            jats_file = jats_files[0]
+            # Extract version from directory name (e.g., "v1")
+            version = version_dir_name
+            # Store relative path from database location (backend/)
+            # Database will be at backend/claim_verification.db
+            # Use os.path.relpath to compute relative path from backend/ to jats_file
+            # This will correctly use ../ to go up when needed
+            db_dir = Path(__file__).resolve().parent
+            rel_path = Path(os.path.relpath(jats_file, db_dir))
+
+            cursor.execute("""
+                INSERT INTO jats (submission_id, xml_rel_path, version)
+                VALUES (?, ?, ?)
+            """, (
+                submission_id,
+                str(rel_path),
+                version
+            ))
+
+        # ====================================================================
+        # 4. INSERT CONTENT (manuscript and peer_review)
         # ====================================================================
         content_id_map = {}  # Map old content IDs to new ones
         for content in data['content']:
@@ -140,7 +175,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             content_id_map[content['id']] = content['id']
 
         # ====================================================================
-        # 4. INSERT PROMPTS
+        # 5. INSERT PROMPTS
         # ====================================================================
         for prompt in data['prompts']:
             cursor.execute("""
@@ -155,7 +190,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 5. INSERT CLAIMS
+        # 6. INSERT CLAIMS
         # ====================================================================
         for claim in data['claims']:
             # Convert source_text to source, evidence_reasoning to evidence
@@ -178,7 +213,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 6. INSERT RESULTS (unified table)
+        # 7. INSERT RESULTS (unified table)
         # ====================================================================
         for result in data['results']:
             cursor.execute("""
@@ -201,7 +236,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 7. INSERT CLAIM_RESULT JUNCTIONS
+        # 8. INSERT CLAIM_RESULT JUNCTIONS
         # ====================================================================
         for claim_result in data['claim_results']:
             cursor.execute("""
@@ -213,7 +248,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
             ))
 
         # ====================================================================
-        # 8. INSERT COMPARISONS
+        # 9. INSERT COMPARISONS
         # ====================================================================
         for comparison in data['comparisons']:
             cursor.execute("""
@@ -247,6 +282,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         print(f"   Title: {title}")
         print(f"   Authors: {len(metadata.get('authors', []))}")
         print(f"   Affiliations: {len(metadata.get('affiliations', []))}")
+        print(f"   JATS file: {'Found' if jats_files else 'Not found'}")
         print(f"   Claims: {len(data['claims'])}")
         print(f"   Results: {len(data['results'])}")
         print(f"   Comparisons: {len(data['comparisons'])}")

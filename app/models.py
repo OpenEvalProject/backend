@@ -100,6 +100,7 @@ class ManuscriptMetadata(BaseModel):
     pub_date: Optional[str] = None  # manuscript_pub_date field
     abstract: Optional[str] = None  # manuscript_abstract field
     created_at: str
+    has_jats: bool  # Whether JATS XML file is available
 
 
 class ManuscriptSummary(BaseModel):
