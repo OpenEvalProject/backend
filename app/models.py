@@ -53,6 +53,12 @@ class ClaimFull(BaseModel):
     source_type: List[str]  # JSON array: ["TEXT"], ["FIGURE"], etc.
     evidence: str  # Changed from evidence_reasoning
     evidence_type: List[str]  # JSON array: ["DATA", "CITATION", ...]
+    # JATS position data for precise claim highlighting
+    matched_segment: Optional[str] = None
+    xpath_start: Optional[str] = None
+    xpath_stop: Optional[str] = None
+    char_offset_start: Optional[int] = None
+    char_offset_stop: Optional[int] = None
 
 
 class ResultFull(BaseModel):

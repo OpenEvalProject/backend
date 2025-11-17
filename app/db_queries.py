@@ -265,7 +265,8 @@ def get_claims_for_manuscript(
 
     # NEW: Join through content table to get claims for submission
     cursor.execute("""
-        SELECT c.id, c.claim_id, c.claim, c.claim_type, c.source, c.source_type, c.evidence, c.evidence_type
+        SELECT c.id, c.claim_id, c.claim, c.claim_type, c.source, c.source_type, c.evidence, c.evidence_type,
+               c.matched_segment, c.xpath_start, c.xpath_stop, c.char_offset_start, c.char_offset_stop
         FROM claim c
         JOIN content ct ON c.content_id = ct.id
         WHERE ct.submission_id = ?
@@ -306,7 +307,12 @@ def get_claims_for_manuscript(
             source=row[4],
             source_type=source_type,
             evidence=row[6],
-            evidence_type=evidence_type
+            evidence_type=evidence_type,
+            matched_segment=row[8],
+            xpath_start=row[9],
+            xpath_stop=row[10],
+            char_offset_start=row[11],
+            char_offset_stop=row[12]
         ))
 
     return claims

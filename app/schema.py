@@ -100,6 +100,12 @@ CREATE TABLE IF NOT EXISTS claim (
     embedding BLOB,
     embedding_model TEXT,
     embedding_created_at TIMESTAMP,
+    -- JATS position data for precise claim highlighting
+    matched_segment TEXT,
+    xpath_start TEXT,
+    xpath_stop TEXT,
+    char_offset_start INTEGER,
+    char_offset_stop INTEGER,
     created_at TIMESTAMP NOT NULL,
     FOREIGN KEY (content_id) REFERENCES content(id) ON DELETE CASCADE,
     FOREIGN KEY (prompt_id) REFERENCES prompt(id)

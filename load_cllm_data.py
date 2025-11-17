@@ -35,6 +35,23 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
 
+    # Load position data from pos_claims.json
+    pos_claims_path = json_path_obj.parent / "pos_claims.json"
+    position_data_map = {}  # Map claim text to position data
+    if pos_claims_path.exists():
+        with open(pos_claims_path, 'r') as f:
+            pos_claims = json.load(f)
+            for pos_claim in pos_claims:
+                # Use normalized claim text as key
+                query_text = pos_claim['query'].strip()
+                position_data_map[query_text] = {
+                    'matched_segment': pos_claim['matched_segment'],
+                    'xpath_start': pos_claim['start']['xpath'],
+                    'xpath_stop': pos_claim['stop']['xpath'],
+                    'char_offset_start': pos_claim['start']['char_offset'],
+                    'char_offset_stop': pos_claim['stop']['char_offset']
+                }
+
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
@@ -193,11 +210,17 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         # 6. INSERT CLAIMS
         # ====================================================================
         for claim in data['claims']:
+            # Look up position data for this claim
+            claim_text = claim['claim'].strip()
+            pos_data = position_data_map.get(claim_text, {})
+
             # Convert source_text to source, evidence_reasoning to evidence
             cursor.execute("""
                 INSERT INTO claim (id, content_id, claim_id, claim, claim_type, source,
-                                   source_type, evidence, evidence_type, prompt_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   source_type, evidence, evidence_type, prompt_id,
+                                   matched_segment, xpath_start, xpath_stop,
+                                   char_offset_start, char_offset_stop, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 claim['id'],
                 claim['content_id'],  # Now links to content table
@@ -209,6 +232,11 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
                 claim.get('evidence') or claim.get('evidence_reasoning', ''),  # Handle both old and new field names
                 claim['evidence_type'],  # JSON string like '["CITATION", "KNOWLEDGE"]'
                 claim['prompt_id'],
+                pos_data.get('matched_segment'),
+                pos_data.get('xpath_start'),
+                pos_data.get('xpath_stop'),
+                pos_data.get('char_offset_start'),
+                pos_data.get('char_offset_stop'),
                 claim['created_at']
             ))
 
