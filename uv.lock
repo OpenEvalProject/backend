@@ -53,6 +53,7 @@ dependencies = [
     { name = "boto3" },
     { name = "fastapi" },
     { name = "itsdangerous" },
+    { name = "jats" },
     { name = "lxml" },
     { name = "numpy" },
     { name = "openai" },
@@ -70,6 +71,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
+    { name = "jats", specifier = ">=0.2.0" },
     { name = "lxml", specifier = ">=5.0.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "openai", specifier = ">=1.0.0" },
@@ -336,6 +338,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9c/cb/8ac0172223afbccb63986cc25049b154ecfb5e85932587206f42317be31d/itsdangerous-2.2.0.tar.gz", hash = "sha256:e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173", size = 54410 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl", hash = "sha256:c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef", size = 16234 },
+]
+
+[[package]]
+name = "jats"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "lxml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/30/a1/c76d7480b24ef27d31b7f0e3f659cb4c44dc244f1bca360d0c25cc7615b3/jats-0.2.0.tar.gz", hash = "sha256:0fcd4c019625993bdf00d626a7670d6f16076e5a146ee78f3d5769764bc9a309", size = 18666 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/b9/ed15c261d86a5f5d0662641677ef563e1716f9d713a35ed2c50c979afde8/jats-0.2.0-py3-none-any.whl", hash = "sha256:22a08d8e21736bf3c68dd33d706ac5249e4ec8e52714f5534317c5a932b490e1", size = 16473 },
 ]
 
 [[package]]
