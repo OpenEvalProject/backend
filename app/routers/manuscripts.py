@@ -199,7 +199,15 @@ async def get_manuscript_markdown(manuscript_id: str):
             # xml_rel_path is stored relative to the database location
             # __file__ is backend/app/routers/manuscripts.py, so go up 2 levels to get to backend/
             backend_dir = Path(__file__).parent.parent.parent
-            xml_full_path = (backend_dir / xml_rel_path).resolve()
+
+            # IMPORTANT: XML files may be symlinks. We need the parent directory of the symlink
+            # (where pos_claims.json is stored), not the parent of the symlink target.
+            # So we construct the path but don't resolve it yet.
+            xml_path_unresolved = backend_dir / xml_rel_path
+            xml_dir = xml_path_unresolved.parent
+
+            # Now resolve for actual file operations
+            xml_full_path = xml_path_unresolved.resolve()
 
             # Check if file exists
             if not xml_full_path.exists():
@@ -209,11 +217,53 @@ async def get_manuscript_markdown(manuscript_id: str):
                     detail=f"JATS XML file not found at: {xml_rel_path}"
                 )
 
+            # Check for pos_claims.json to use annotated XML if available
+            # Version is already like "v1", so just use it directly
+            pos_claims_path = xml_dir / version / "pos_claims.json"
+
+            xml_to_convert = xml_full_path
+
+            # If pos_claims.json exists, create annotated XML
+            if pos_claims_path.exists():
+                try:
+                    import tempfile
+                    from jats.annotate import inject_named_content_tags
+
+                    logger.info(f"Using annotated XML with pos_claims from {pos_claims_path}")
+
+                    # Create annotated XML
+                    annotated_root, successful, failed = inject_named_content_tags(
+                        xml_full_path,
+                        pos_claims_path
+                    )
+
+                    logger.info(f"Annotation complete: {successful} successful, {failed} failed")
+
+                    # Write annotated XML to temporary file
+                    with tempfile.NamedTemporaryFile(mode='wb', suffix='.xml', delete=False) as tmp:
+                        from lxml import etree
+                        tree = etree.ElementTree(annotated_root)
+                        tree.write(tmp, encoding='utf-8', xml_declaration=True)
+                        tmp_path = tmp.name
+
+                    xml_to_convert = Path(tmp_path)
+
+                except Exception as annotation_error:
+                    logger.warning(f"Annotation failed, falling back to plain XML: {annotation_error}")
+                    xml_to_convert = xml_full_path
+
             # Convert JATS XML to markdown using the jats library
             try:
                 from app.services.jats_parser import parse_jats_xml
 
-                markdown_content = parse_jats_xml(str(xml_full_path))
+                markdown_content = parse_jats_xml(str(xml_to_convert))
+
+                # Clean up temporary file if created
+                if xml_to_convert != xml_full_path:
+                    try:
+                        xml_to_convert.unlink()
+                    except:
+                        pass
 
                 return {
                     "markdown": markdown_content,
