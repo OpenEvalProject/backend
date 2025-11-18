@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS result (
     result TEXT NOT NULL,
     result_status TEXT NOT NULL CHECK(result_status IN ('SUPPORTED', 'UNSUPPORTED', 'UNCERTAIN')),
     result_reasoning TEXT NOT NULL,
+    result_type TEXT CHECK(result_type IN ('MAJOR', 'MINOR')),
     reviewer_id TEXT,
     reviewer_name TEXT,
     prompt_id TEXT,

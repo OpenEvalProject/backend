@@ -72,6 +72,7 @@ class ResultFull(BaseModel):
     reviewer_name: Optional[str] = None
     result_status: str  # SUPPORTED, UNSUPPORTED, UNCERTAIN
     result_reasoning: str
+    result_type: Optional[str] = None  # MAJOR or MINOR
 
 
 # Backwards compatibility aliases

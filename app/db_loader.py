@@ -211,7 +211,7 @@ def get_submission_summary(submission_id: str) -> Dict[str, Any]:
         cursor.execute("""
             SELECT COUNT(*) FROM result r
             JOIN content ct ON r.content_id = ct.id
-            WHERE ct.submission_id = ? AND r.result_type = 'llm'
+            WHERE ct.submission_id = ? AND r.result_category = 'llm'
         """, (submission_id,))
         num_llm_results = cursor.fetchone()[0]
 
@@ -219,7 +219,7 @@ def get_submission_summary(submission_id: str) -> Dict[str, Any]:
         cursor.execute("""
             SELECT COUNT(*) FROM result r
             JOIN content ct ON r.content_id = ct.id
-            WHERE ct.submission_id = ? AND r.result_type = 'peer'
+            WHERE ct.submission_id = ? AND r.result_category = 'peer'
         """, (submission_id,))
         num_peer_results = cursor.fetchone()[0]
 

@@ -327,7 +327,7 @@ def get_results_llm_for_manuscript(
 
     # NEW: Query unified result table filtering by result_category='llm'
     cursor.execute("""
-        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning
+        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning, r.result_type
         FROM result r
         JOIN content ct ON r.content_id = ct.id
         WHERE ct.submission_id = ? AND r.result_category = 'llm'
@@ -359,7 +359,8 @@ def get_results_llm_for_manuscript(
             reviewer_id=row[3],
             reviewer_name=row[4],
             result_status=row[5],
-            result_reasoning=row[6]
+            result_reasoning=row[6],
+            result_type=row[7]
         ))
 
     return results
@@ -374,7 +375,7 @@ def get_results_peer_for_manuscript(
 
     # NEW: Query unified result table filtering by result_category='peer'
     cursor.execute("""
-        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning
+        SELECT r.id, r.result_id, r.result, r.reviewer_id, r.reviewer_name, r.result_status, r.result_reasoning, r.result_type
         FROM result r
         JOIN content ct ON r.content_id = ct.id
         WHERE ct.submission_id = ? AND r.result_category = 'peer'
@@ -406,7 +407,8 @@ def get_results_peer_for_manuscript(
             reviewer_id=row[3],
             reviewer_name=row[4],
             result_status=row[5],
-            result_reasoning=row[6]
+            result_reasoning=row[6],
+            result_type=row[7]
         ))
 
     return results

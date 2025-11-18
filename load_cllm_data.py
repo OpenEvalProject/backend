@@ -246,9 +246,9 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
         for result in data['results']:
             cursor.execute("""
                 INSERT INTO result (id, content_id, result_id, result_category, result,
-                                   result_status, result_reasoning, reviewer_id, reviewer_name,
+                                   result_status, result_reasoning, result_type, reviewer_id, reviewer_name,
                                    prompt_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 result['id'],
                 result['content_id'],  # Now links to content table
@@ -257,6 +257,7 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
                 result['result'],
                 result.get('evaluation_type') or result.get('result_status', 'UNCERTAIN'),  # evaluation_type is the new field name
                 result.get('evaluation') or result.get('result_reasoning', ''),  # evaluation is the new field name
+                result.get('result_type'),  # MAJOR or MINOR
                 result.get('reviewer_id'),
                 result.get('reviewer_name'),
                 result.get('prompt_id'),
