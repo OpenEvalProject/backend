@@ -43,29 +43,60 @@ def get_manuscripts_list(
     cursor.execute("SELECT COUNT(*) FROM submission")
     total_count = cursor.fetchone()[0]
 
-    # Optimized query using JOINs and GROUP BY instead of subqueries
-    # This is MUCH faster than running 9 subqueries per manuscript
+    # Optimized query using CTEs to pre-aggregate counts independently
+    # This avoids the Cartesian product problem of joining 4 tables at once
     query = """
+        WITH claim_counts AS (
+            SELECT ct.submission_id, COUNT(DISTINCT c.id) as total_claims
+            FROM content ct
+            LEFT JOIN claim c ON c.content_id = ct.id
+            GROUP BY ct.submission_id
+        ),
+        result_counts AS (
+            SELECT ct.submission_id,
+                   SUM(CASE WHEN r.result_category = 'llm' THEN 1 ELSE 0 END) as total_results_llm,
+                   SUM(CASE WHEN r.result_category = 'peer' THEN 1 ELSE 0 END) as total_results_peer
+            FROM content ct
+            LEFT JOIN result r ON r.content_id = ct.id
+            GROUP BY ct.submission_id
+        ),
+        peer_review_check AS (
+            SELECT submission_id, 1 as has_peer_reviews
+            FROM content
+            WHERE content_type = 'peer_review'
+            GROUP BY submission_id
+        ),
+        comparison_counts AS (
+            SELECT ct.submission_id,
+                   COUNT(DISTINCT cmp.id) as total_comparisons,
+                   SUM(CASE WHEN cmp.agreement_status = 'agree' THEN 1 ELSE 0 END) as agree_count,
+                   SUM(CASE WHEN cmp.agreement_status = 'partial' THEN 1 ELSE 0 END) as partial_count,
+                   SUM(CASE WHEN cmp.agreement_status = 'disagree' THEN 1 ELSE 0 END) as disagree_count,
+                   SUM(CASE WHEN cmp.agreement_status = 'disjoint' THEN 1 ELSE 0 END) as disjoint_count
+            FROM content ct
+            LEFT JOIN result r ON r.content_id = ct.id
+            LEFT JOIN comparison cmp ON cmp.openeval_result_id = r.id
+            GROUP BY ct.submission_id
+        )
         SELECT
             s.id,
             s.manuscript_title,
             s.manuscript_pub_date,
             s.created_at,
-            COALESCE(COUNT(DISTINCT cl.id), 0) as total_claims,
-            COALESCE(SUM(CASE WHEN r.result_category = 'llm' THEN 1 ELSE 0 END), 0) as total_results_llm,
-            COALESCE(SUM(CASE WHEN r.result_category = 'peer' THEN 1 ELSE 0 END), 0) as total_results_peer,
-            COALESCE(MAX(CASE WHEN ct.content_type = 'peer_review' THEN 1 ELSE 0 END), 0) as has_peer_reviews,
-            COALESCE(COUNT(DISTINCT cmp.id), 0) as total_comparisons,
-            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'agree' THEN 1 ELSE 0 END), 0) as agree_count,
-            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'partial' THEN 1 ELSE 0 END), 0) as partial_count,
-            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'disagree' THEN 1 ELSE 0 END), 0) as disagree_count,
-            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'disjoint' THEN 1 ELSE 0 END), 0) as disjoint_count
+            COALESCE(cc.total_claims, 0) as total_claims,
+            COALESCE(rc.total_results_llm, 0) as total_results_llm,
+            COALESCE(rc.total_results_peer, 0) as total_results_peer,
+            COALESCE(pr.has_peer_reviews, 0) as has_peer_reviews,
+            COALESCE(cpc.total_comparisons, 0) as total_comparisons,
+            COALESCE(cpc.agree_count, 0) as agree_count,
+            COALESCE(cpc.partial_count, 0) as partial_count,
+            COALESCE(cpc.disagree_count, 0) as disagree_count,
+            COALESCE(cpc.disjoint_count, 0) as disjoint_count
         FROM submission s
-        LEFT JOIN content ct ON ct.submission_id = s.id
-        LEFT JOIN claim cl ON cl.content_id = ct.id
-        LEFT JOIN result r ON r.content_id = ct.id
-        LEFT JOIN comparison cmp ON cmp.openeval_result_id = r.id
-        GROUP BY s.id, s.manuscript_title, s.manuscript_pub_date, s.created_at
+        LEFT JOIN claim_counts cc ON cc.submission_id = s.id
+        LEFT JOIN result_counts rc ON rc.submission_id = s.id
+        LEFT JOIN peer_review_check pr ON pr.submission_id = s.id
+        LEFT JOIN comparison_counts cpc ON cpc.submission_id = s.id
         ORDER BY s.created_at DESC
     """
 
