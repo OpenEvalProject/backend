@@ -43,46 +43,29 @@ def get_manuscripts_list(
     cursor.execute("SELECT COUNT(*) FROM submission")
     total_count = cursor.fetchone()[0]
 
-    # Build query using scalar subqueries for better performance
-    # NEW: Works with submission/content/unified result tables
+    # Optimized query using JOINs and GROUP BY instead of subqueries
+    # This is MUCH faster than running 9 subqueries per manuscript
     query = """
         SELECT
             s.id,
             s.manuscript_title,
             s.manuscript_pub_date,
             s.created_at,
-            (SELECT COUNT(DISTINCT c.id) FROM claim c
-             JOIN content ct ON c.content_id = ct.id
-             WHERE ct.submission_id = s.id) as total_claims,
-            (SELECT COUNT(*) FROM result r
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND r.result_category = 'llm') as total_results_llm,
-            (SELECT COUNT(*) FROM result r
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND r.result_category = 'peer') as total_results_peer,
-            (SELECT COUNT(*) > 0 FROM content
-             WHERE submission_id = s.id AND content_type = 'peer_review') as has_peer_reviews,
-            (SELECT COUNT(*) FROM comparison cmp
-             JOIN result r ON cmp.openeval_result_id = r.id
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id) as total_comparisons,
-            (SELECT COUNT(*) FROM comparison cmp
-             JOIN result r ON cmp.openeval_result_id = r.id
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'agree') as agree_count,
-            (SELECT COUNT(*) FROM comparison cmp
-             JOIN result r ON cmp.openeval_result_id = r.id
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'partial') as partial_count,
-            (SELECT COUNT(*) FROM comparison cmp
-             JOIN result r ON cmp.openeval_result_id = r.id
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disagree') as disagree_count,
-            (SELECT COUNT(*) FROM comparison cmp
-             JOIN result r ON cmp.openeval_result_id = r.id
-             JOIN content ct ON r.content_id = ct.id
-             WHERE ct.submission_id = s.id AND cmp.agreement_status = 'disjoint') as disjoint_count
+            COALESCE(COUNT(DISTINCT cl.id), 0) as total_claims,
+            COALESCE(SUM(CASE WHEN r.result_category = 'llm' THEN 1 ELSE 0 END), 0) as total_results_llm,
+            COALESCE(SUM(CASE WHEN r.result_category = 'peer' THEN 1 ELSE 0 END), 0) as total_results_peer,
+            COALESCE(MAX(CASE WHEN ct.content_type = 'peer_review' THEN 1 ELSE 0 END), 0) as has_peer_reviews,
+            COALESCE(COUNT(DISTINCT cmp.id), 0) as total_comparisons,
+            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'agree' THEN 1 ELSE 0 END), 0) as agree_count,
+            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'partial' THEN 1 ELSE 0 END), 0) as partial_count,
+            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'disagree' THEN 1 ELSE 0 END), 0) as disagree_count,
+            COALESCE(SUM(CASE WHEN cmp.agreement_status = 'disjoint' THEN 1 ELSE 0 END), 0) as disjoint_count
         FROM submission s
+        LEFT JOIN content ct ON ct.submission_id = s.id
+        LEFT JOIN claim cl ON cl.content_id = ct.id
+        LEFT JOIN result r ON r.content_id = ct.id
+        LEFT JOIN comparison cmp ON cmp.openeval_result_id = r.id
+        GROUP BY s.id, s.manuscript_title, s.manuscript_pub_date, s.created_at
         ORDER BY s.created_at DESC
     """
 
