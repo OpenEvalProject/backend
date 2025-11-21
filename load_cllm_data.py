@@ -75,8 +75,17 @@ def load_cllm_export(db_path: str, json_path: str) -> str:
                 title = content_lines[0].strip('# ') if content_lines else 'Untitled'
 
         # ====================================================================
-        # 1. INSERT SUBMISSION
+        # 1. INSERT SUBMISSION (delete existing first to handle updates)
         # ====================================================================
+        # Check if submission already exists
+        cursor.execute("SELECT id FROM submission WHERE id = ?", (submission_id,))
+        existing = cursor.fetchone()
+
+        if existing:
+            # Delete existing submission (will cascade to all related tables)
+            cursor.execute("DELETE FROM submission WHERE id = ?", (submission_id,))
+            print(f"🔄 Updating existing submission {submission_id}")
+
         cursor.execute("""
             INSERT INTO submission (id, user_id, manuscript_title, manuscript_doi, manuscript_pub_date, manuscript_abstract, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
