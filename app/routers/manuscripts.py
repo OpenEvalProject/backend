@@ -55,11 +55,13 @@ async def get_aggregate_statistics():
             cursor.execute("SELECT COUNT(*) FROM comparison")
             total_comparisons = cursor.fetchone()[0]
 
-            # Count submissions with peer reviews (have peer_review content)
+            # Count submissions with peer reviews that were successfully evaluated
+            # (have comparisons between OpenEval and peer results)
             cursor.execute("""
-                SELECT COUNT(DISTINCT submission_id)
-                FROM content
-                WHERE content_type = 'peer_review'
+                SELECT COUNT(DISTINCT c.submission_id)
+                FROM comparison cmp
+                INNER JOIN result r ON (r.id = cmp.openeval_result_id OR r.id = cmp.peer_result_id)
+                INNER JOIN content c ON c.id = r.content_id
             """)
             manuscripts_with_peer_reviews = cursor.fetchone()[0]
 
