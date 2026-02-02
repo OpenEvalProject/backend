@@ -109,3 +109,4 @@ Desktop.ini
 
 # UV package manager
 .uv/
+.env
