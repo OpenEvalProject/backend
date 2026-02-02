@@ -100,7 +100,6 @@ async def list_manuscripts(
     Sort options: newest (default), oldest, most_claims, most_results_llm,
                   most_results_peer, most_agree, most_disagree
     """
-    logger.info(f"list_manuscripts called with sort_by={sort_by}, limit={limit}, offset={offset}")
     try:
         with get_db() as conn:
             manuscripts, total_count = get_manuscripts_list(conn, limit=limit, offset=offset, sort_by=sort_by)
