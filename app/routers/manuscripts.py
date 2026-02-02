@@ -85,7 +85,8 @@ async def get_aggregate_statistics():
 @router.get("", response_model=ManuscriptListResponse)
 async def list_manuscripts(
     limit: Optional[int] = Query(50, description="Maximum number of manuscripts to return (default: 50)"),
-    offset: int = Query(0, description="Number of manuscripts to skip")
+    offset: int = Query(0, description="Number of manuscripts to skip"),
+    sort_by: str = Query("newest", description="Sort option: newest, oldest, most_claims, most_results_llm, most_results_peer, most_agree, most_disagree")
 ):
     """
     Get list of all manuscripts with summary information.
@@ -96,10 +97,12 @@ async def list_manuscripts(
     - Agreement counts (if peer reviews exist)
 
     Default limit is 50 manuscripts for faster initial load.
+    Sort options: newest (default), oldest, most_claims, most_results_llm,
+                  most_results_peer, most_agree, most_disagree
     """
     try:
         with get_db() as conn:
-            manuscripts, total_count = get_manuscripts_list(conn, limit=limit, offset=offset)
+            manuscripts, total_count = get_manuscripts_list(conn, limit=limit, offset=offset, sort_by=sort_by)
 
             return ManuscriptListResponse(
                 manuscripts=manuscripts,

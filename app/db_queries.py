@@ -21,10 +21,23 @@ from app.models import (
 )
 
 
+# Valid sort columns mapping (frontend name -> SQL column)
+SORT_COLUMNS = {
+    "newest": ("s.manuscript_pub_date", "DESC"),
+    "oldest": ("s.manuscript_pub_date", "ASC"),
+    "most_claims": ("total_claims", "DESC"),
+    "most_results_llm": ("total_results_llm", "DESC"),
+    "most_results_peer": ("total_results_peer", "DESC"),
+    "most_agree": ("agree_count", "DESC"),
+    "most_disagree": ("disagree_count", "DESC"),
+}
+
+
 def get_manuscripts_list(
     conn: sqlite3.Connection,
     limit: Optional[int] = None,
-    offset: int = 0
+    offset: int = 0,
+    sort_by: str = "newest"
 ) -> tuple[List[ManuscriptSummary], int]:
     """
     Get list of all submissions (manuscripts) with summary information.
@@ -33,6 +46,8 @@ def get_manuscripts_list(
         conn: Database connection
         limit: Optional limit on number of results
         offset: Offset for pagination
+        sort_by: Sort option (newest, oldest, most_claims, most_results_llm,
+                 most_results_peer, most_agree, most_disagree)
 
     Returns:
         Tuple of (list of ManuscriptSummary, total_count)
@@ -97,8 +112,11 @@ def get_manuscripts_list(
         LEFT JOIN result_counts rc ON rc.submission_id = s.id
         LEFT JOIN peer_review_check pr ON pr.submission_id = s.id
         LEFT JOIN comparison_counts cpc ON cpc.submission_id = s.id
-        ORDER BY s.created_at DESC
     """
+
+    # Add ORDER BY based on sort_by parameter
+    sort_column, sort_order = SORT_COLUMNS.get(sort_by, SORT_COLUMNS["newest"])
+    query += f" ORDER BY {sort_column} {sort_order}"
 
     if limit:
         query += f" LIMIT {limit} OFFSET {offset}"
