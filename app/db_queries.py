@@ -121,6 +121,10 @@ def get_manuscripts_list(
     if limit:
         query += f" LIMIT {limit} OFFSET {offset}"
 
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Manuscripts query sort_by={sort_by}, sort_column={sort_column}, sort_order={sort_order}")
+
     cursor.execute(query)
     rows = cursor.fetchall()
 
